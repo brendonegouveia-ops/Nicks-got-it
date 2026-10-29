@@ -39,12 +39,12 @@ The smoke test walks Nick across the house by holding a finger on the grill, the
 
 ## Shareable link (GitHub Pages)
 
-**Play:** https://brendonegouveia-ops.github.io/pedro-game/nick/
+**Play:** https://brendonegouveia-ops.github.io/nicks-got-it/
 
-The repo's GitHub Pages site serves `nick/index.html` from `main`. It's one self-contained file built from this project, so after changing the game, rebuild it and commit it with your change:
+GitHub Pages serves `docs/index.html` from `main` (Settings → Pages → Deploy from a branch → `main` / `/docs`). It's one self-contained file built from this project, so after changing the game, rebuild it and commit it with your change:
 
 ```bash
-npm run build:pages   # writes ../nick/index.html
+npm run build:pages   # writes docs/index.html
 ```
 
 That page has no backend, so the leaderboard shows "offline" there; progress and best runs are saved on each player's device. The full leaderboard needs the Cloudflare deploy below.
