@@ -2,7 +2,7 @@
 
 Kayla’s out until 5. Game night at Carlson’s is at 5. Nick said “I got it.”
 
-A mobile-first browser survival game in 3D. A third-person camera follows Nick through the house and backyard; walk him with an on-screen D-pad and handle every job with a big thumb gesture on the action pad. **Make it to 5:00 PM and Nick goes to game night**; that unlocks the next week, a harder version of the same Saturday. If **Chaos** hits 100 first, game night's off and you retry the week. Desktop works with a keyboard or mouse.
+A mobile-first browser survival game in 3D. A third-person camera follows Nick through the house and backyard; walk him with an on-screen D-pad and handle every job with a big thumb gesture on the action pad. **Make it to 5:00 PM and Nick goes to game night**; that unlocks the next week, a harder version of the same Thursday. If **Chaos** hits 100 first, game night's off and you retry the week. Desktop works with a keyboard or mouse.
 
 The clock runs 1.5 game minutes per real second, so a week is about 5 minutes 20 seconds (9:00 AM to 5:00 PM). Every other timer (request patience, cooldowns, FaceTime, cries) is in real seconds.
 
@@ -88,7 +88,7 @@ The anti-cheat is a plausibility floor, not real security. A score of N game min
 - **No dead items.** A crying kid takes whatever snack, drink or band-aid Nick holds: stand next to them and tap. The crying stops and Chaos drops by 3.
 - **Hands.** Nick has one free hand: one item, or Nora, or the FaceTime phone. The panel shows what's in it and has a **Put it down** button. The HUD shows it read-only.
 - **Abilities** (bottom bar, keys 1–3): Dad Joke freezes every request and system timer for 3 s, with a 25 s cooldown. It doesn't stop the clock, which is your score. Call Kayla has 2 charges: tap the ability, then a bubble. Her replies go “Sure babe! 💕” → “k”. Because I Said So clears every open screen_time and has a 40 s cooldown.
-- **Weeks.** Week N's Saturday is harder: patience starts at 110% in week 1 and drops 5% per week (floor 65%), requests come 12% faster per week, Chaos drains 8% slower per week, and fights break out 25% more often. From week 3, Kayla texts "running late 🙃" at 4:45 and game night slides to 5:30. Each week has a generic game night theme (board games, poker, trivia…). Progress (highest unlocked week) and your best run are saved on the device; the title screen has a week picker.
+- **Weeks.** Week N's Thursday is harder: patience starts at 110% in week 1 and drops 5% per week (floor 65%), requests come 12% faster per week, Chaos drains 8% slower per week, and fights break out 25% more often. From week 3, Kayla texts "running late 🙃" at 4:45 and game night slides to 5:30. Each week has a generic game night theme (board games, poker, trivia…). Progress (highest unlocked week) and your best run are saved on the device; the title screen has a week picker.
 - **Desktop keys.** WASD (and arrows, except while a swipe or rub is up) walk. 1–3 abilities. Space/Enter tap, hold, mash, or pick the first choice. Arrows swipe or rub. Z/X pick choices. U says “uh-huh”. P/Esc pauses.
 
 ## Tuning

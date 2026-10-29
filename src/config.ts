@@ -5,7 +5,7 @@ export const GAME = {
   width: 390,
   height: 844,
   title: "NICK'S GOT IT",
-  startHour: 9, // 9:00 AM Saturday
+  startHour: 9, // 9:00 AM Thursday
 };
 
 // Game clock: game minutes per real second. 9:00 AM -> 5:00 PM takes 480 / 1.5 = 320 s (~5.3 min).
@@ -255,7 +255,7 @@ export const TEXTS = {
 };
 
 export const KAYLA_CALL_REPLIES = ['Sure babe! 💕', 'k'];
-export const KAYLA_OUT_OF_CHARGES = 'Kayla is “in a meeting.” On a Saturday.';
+export const KAYLA_OUT_OF_CHARGES = 'Kayla is “in a meeting.” Her third one today.';
 
 export const DAD_JOKES: string[] = [
   'Why was the coffee maker so calm? It knew how to filter out the noise.',
