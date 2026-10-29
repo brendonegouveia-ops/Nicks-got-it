@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { COFFEE } from '../config';
 import { COUCH_POS, DOORS, FURNITURE, ROOM_RECTS, STATIONS, WALLS, WORLD as W_SIM, type StationId } from '../sim/house';
 import { KID_IDS, type ActorId, type Sim } from '../sim/sim';
-import { WORLD } from '../game/layout';
+import { W, WORLD } from '../game/layout';
 import { ball, box, cyl, makeEloise, makeEvelyn, makeItem, makeNick, makeNora, makeTyler, mat, type Rig } from './models';
 
 // Cutaway walls (about chest height), so rooms read from the follow camera.
@@ -30,7 +30,6 @@ export class World3D {
   private handKey = '';
   private camTarget = new THREE.Vector3();
   private ray = new THREE.Raycaster();
-  private cssW = 390;
   private cssH = 844;
   private s = 1; // CSS px per design px
   private ready = false;
@@ -45,12 +44,10 @@ export class World3D {
     this.build();
   }
 
-  // Match the Phaser canvas (CSS px); the 3D view fills its world rectangle.
+  // Match the Phaser canvas (CSS px); the 3D view fills its world rectangle (re-read from the layout).
   resize(cssW: number, cssH: number) {
-    if (cssW === this.cssW && cssH === this.cssH && this.ready) return;
-    this.cssW = cssW;
     this.cssH = cssH;
-    this.s = cssW / 390;
+    this.s = cssW / W;
     this.renderer.setSize(cssW, cssH, false);
     this.camera.aspect = WORLD.w / WORLD.h;
     this.camera.updateProjectionMatrix();

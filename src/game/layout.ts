@@ -1,17 +1,43 @@
-// Screen geometry (390 x 844 portrait design space). The world (src/sim/house.ts) is drawn at WORLD.y.
-import { WORLD as W_SIM } from '../sim/house';
+// Screen geometry in design px. The layout fills the whole screen: a phone keeps a 390-wide design
+// space and the extra height goes to the 3D view; wider screens get a wider (and slightly taller)
+// design space. The HUD sits on top, the thumb deck and ability bar at the bottom, the 3D view between.
+// Every region is recomputed by setLayout(); importers read these live bindings / objects each frame.
+export const BASE_W = 390;
+const MIN_H = 600; // shortest design height (HUD + deck + a usable 3D view)
+const WIDE_H = 760; // design height on square-ish or landscape screens
+const MAX_ASPECT = 2; // wider than 2:1 letterboxes
 
-export const W = 390;
-export const H = 844;
+export let W = BASE_W;
+export let H = 844;
 
 export const HUD = { y: 0, h: 72 };
-// The whole floor plan is always on screen: every request timer stays visible.
-export const WORLD = { x: 0, y: 74, w: W_SIM.w, h: W_SIM.h };
-// Thumb zone (bottom ~29% of the screen): D-pad on the left, action pad on the right, ability bar below.
+export const WORLD = { x: 0, y: 74, w: BASE_W, h: 520 };
+// Thumb zone: D-pad on the left, action pad on the right, ability bar below.
 export const DECK = { y: 598, h: 168 };
 export const DPAD = { cx: 82, cy: 682, r: 74 };
 export const PANEL = { x: 166, y: 600, w: 218, h: 164 };
-export const BAR = { x: 0, y: 770, w: 390, h: 74 };
+export const BAR = { x: 0, y: 770, w: BASE_W, h: 74 };
+
+export function setLayout(w: number, h: number) {
+  W = w;
+  H = h;
+  Object.assign(BAR, { y: H - 74, w: W });
+  Object.assign(DECK, { y: BAR.y - 172 });
+  Object.assign(DPAD, { cy: BAR.y - 88 });
+  const pw = Math.min(W - 172, 420);
+  Object.assign(PANEL, { x: W - 6 - pw, y: BAR.y - 170, w: pw });
+  Object.assign(WORLD, { w: W, h: DECK.y - 4 - WORLD.y });
+}
+
+// Design size for a viewport of vw x vh CSS px (same aspect, so the canvas fills it).
+export function fitLayout(vw: number, vh: number) {
+  const r = vh / Math.max(1, vw);
+  const tall = MIN_H / BASE_W;
+  if (r >= tall) return setLayout(BASE_W, Math.round(BASE_W * r));
+  const h = MIN_H + (WIDE_H - MIN_H) * Math.min(1, (tall - r) / (tall - 1));
+  setLayout(Math.round(Math.min(h / r, h * MAX_ASPECT)), Math.round(h));
+}
+setLayout(BASE_W, 844);
 
 export const toScreen = (x: number, y: number) => ({ x: x + WORLD.x, y: y + WORLD.y });
 export const toWorld = (x: number, y: number) => ({

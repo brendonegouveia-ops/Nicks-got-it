@@ -7,7 +7,7 @@ import { beginRun, submitScore, topScores, type ScoreRow } from './leaderboard';
 import { load, save } from './storage';
 import { GameScene } from './game/GameScene';
 import { World3D } from './three/World3D';
-import { H, W } from './game/layout';
+import { DPAD, H, PANEL, W, fitLayout } from './game/layout';
 import { clockString, type Sim } from './sim/sim';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -50,6 +50,9 @@ document.addEventListener(
 );
 
 // ---------------------------------------------------------------- game
+// The design space takes the shape of the screen, so the game fills it edge to edge.
+const gameEl = $('game');
+fitLayout(gameEl.clientWidth, gameEl.clientHeight);
 const scene = new GameScene();
 const R = scene.R;
 const game = new Phaser.Game({
@@ -79,9 +82,22 @@ $('game').prepend(threeCanvas);
 const world = new World3D(threeCanvas);
 scene.world = world;
 let lastRect = '';
+let lastBox = '';
 game.events.on('prerender', () => {
+  // Refit when the screen's shape changes (rotation, browser bars, window resize).
+  const box = `${gameEl.clientWidth}x${gameEl.clientHeight}`;
+  if (box !== lastBox && gameEl.clientWidth > 0 && gameEl.clientHeight > 0) {
+    lastBox = box;
+    const before = `${W}x${H}`;
+    fitLayout(gameEl.clientWidth, gameEl.clientHeight);
+    if (`${W}x${H}` !== before) {
+      game.scale.setGameSize(W * R, H * R);
+      scene.relayout();
+      lastRect = '';
+    }
+  }
   const c = game.canvas;
-  const key = `${c.offsetLeft},${c.offsetTop},${c.clientWidth},${c.clientHeight}`;
+  const key = `${c.offsetLeft},${c.offsetTop},${c.clientWidth},${c.clientHeight},${W}x${H}`;
   if (key === lastRect) return;
   lastRect = key;
   Object.assign(threeCanvas.style, {
@@ -421,4 +437,4 @@ function escapeHtml(s: string) {
 }
 
 // Expose a tiny handle for the headless smoke test.
-(window as unknown as { __nick: unknown }).__nick = { scene, game, pause, resume, get paused() { return paused; } };
+(window as unknown as { __nick: unknown }).__nick = { scene, game, pause, resume, get paused() { return paused; }, get layout() { return { W, H, PANEL: { ...PANEL }, DPAD: { ...DPAD } }; } };

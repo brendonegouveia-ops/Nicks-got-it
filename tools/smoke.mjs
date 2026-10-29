@@ -32,12 +32,22 @@ await page.waitForFunction(() => window.__nick.scene.running);
 // Headless software GL renders slowly; run game time at 1/4 so timing windows stay testable.
 await page.evaluate(() => (window.__nick.scene.timeScale = 0.25));
 
+// The layout takes the screen's shape: the canvas must fill #game edge to edge.
+const LAYOUT = await page.evaluate(() => window.__nick.layout);
+const fill = await page.evaluate(() => {
+  const c = document.querySelector('#game canvas').getBoundingClientRect();
+  const g = document.querySelector('#game').getBoundingClientRect();
+  return { cw: c.width, ch: c.height, gw: g.width, gh: g.height };
+});
+if (Math.abs(fill.cw - fill.gw) > 2 || Math.abs(fill.ch - fill.gh) > 2) fail(`canvas ${fill.cw}x${fill.ch} does not fill #game ${fill.gw}x${fill.gh}`);
+console.log('layout', `${LAYOUT.W}x${LAYOUT.H}`, 'canvas', `${Math.round(fill.cw)}x${Math.round(fill.ch)}`);
+
 // Map design coords -> page coords via the canvas rect.
 const toPage = async (x, y) =>
-  page.evaluate(([x, y]) => {
+  page.evaluate(([x, y, W, H]) => {
     const c = document.querySelector('#game canvas').getBoundingClientRect();
-    return { x: c.left + (x / 390) * c.width, y: c.top + (y / 844) * c.height };
-  }, [x, y]);
+    return { x: c.left + (x / W) * c.width, y: c.top + (y / H) * c.height };
+  }, [x, y, LAYOUT.W, LAYOUT.H]);
 const tapDesign = async (x, y) => {
   const p = await toPage(x, y);
   await page.touchscreen.tap(p.x, p.y);
@@ -50,10 +60,11 @@ const touch = async (type, x, y) => {
   await cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x: p.x, y: p.y }] });
 };
 // Action pad geometry (src/game/layout.ts PANEL + panel.ts): center and the two stacked rows.
-const PX = 275;
-const PY = 694;
-const ROW1 = 669;
-const ROW2 = 729;
+const { PANEL, DPAD } = LAYOUT;
+const PX = PANEL.x + PANEL.w / 2;
+const PY = PANEL.y + 94;
+const ROW1 = PANEL.y + 69;
+const ROW2 = PANEL.y + 129;
 const tapPanel = async (x = PX, y = PY) => {
   await touch('touchStart', x, y);
   await touch('touchEnd', x, y);
@@ -63,10 +74,10 @@ const WORLD_Y = 74;
 // D-pad: hold "up" from the living room until Nick walks out the slider into the backyard.
 await sim(() => (window.__nick.scene.timeScale = 1));
 const start = await sim(() => ({ ...window.__nick.scene.sim.nick }));
-await touch('touchStart', 82, 682 - 44);
+await touch('touchStart', DPAD.cx, DPAD.cy - 44);
 await page.waitForFunction(() => window.__nick.scene.sim.nick.room === 'backyard', null, { timeout: 30000 });
 await page.screenshot({ path: `${OUT}/03-walking.png` });
-await touch('touchEnd', 82, 682 - 44);
+await touch('touchEnd', DPAD.cx, DPAD.cy - 44);
 await page.waitForTimeout(200);
 const after = await sim(() => ({ ...window.__nick.scene.sim.nick, steering: window.__nick.scene.sim.steering }));
 if (after.steering) fail('still walking after releasing the D-pad');
@@ -194,7 +205,7 @@ await page.screenshot({ path: `${OUT}/05-nap.png` });
 
 // Dad joke via the ability bar.
 await sim(() => { const s = window.__nick.scene; s.textQueue.length = 0; });
-await tapDesign(58, 806);
+await tapDesign(58, LAYOUT.H - 38); // Dad Joke button (ability bar)
 await page.waitForFunction(() => window.__nick.scene.jokeCard.visible && window.__nick.scene.jokeCard.alpha > 0.9);
 await page.screenshot({ path: `${OUT}/06-dad-joke.png` });
 if (!(await sim(() => window.__nick.scene.sim.frozen))) fail('dad joke did not freeze');
@@ -212,7 +223,7 @@ await page.waitForFunction(() => window.__nick.scene.sim.facetime.prompt, null, 
 await page.screenshot({ path: `${OUT}/07-facetime.png` });
 const missedBefore = await sim(() => window.__nick.scene.sim.facetime.missed);
 const promptId = await sim(() => window.__nick.scene.sim.facetime.prompt.id);
-const uh = await toPage(229, 598 - 36);
+const uh = await toPage(LAYOUT.W / 2 + 34, PANEL.y - 38);
 await page.touchscreen.tap(uh.x, uh.y);
 const ft = await sim(() => ({ p: window.__nick.scene.sim.facetime.prompt?.id ?? null, m: window.__nick.scene.sim.facetime.missed }));
 if (ft.p === promptId || ft.m !== missedBefore) fail('uh-huh tap missed ' + JSON.stringify(ft));

@@ -39,7 +39,7 @@ The smoke test walks Nick across the house by holding a finger on the grill, the
 
 ## Shareable link (GitHub Pages)
 
-**Play:** https://brendonegouveia-ops.github.io/nicks-got-it/
+**Play:** https://brendonegouveia-ops.github.io/Nicks-got-it/ (the path is case-sensitive: capital N, matching the repo name)
 
 GitHub Pages serves `docs/index.html` from `main` (Settings → Pages → Deploy from a branch → `main` / `/docs`). It's one self-contained file built from this project, so after changing the game, rebuild it and commit it with your change:
 
@@ -82,7 +82,7 @@ The anti-cheat is a plausibility floor, not real security. A score of N game min
 - **Doing jobs.** Walk up to a kid or a spill (within 46 px) or a station (within 34 px) and that job shows on the **action pad** on the right (right thumb), even while you're still walking. The current job stays up until Nick is 12 px past its reach, so shuffling around doesn't flicker it. When two things are in reach, a kid's request beats a station, then the nearest wins. With nothing doable in reach, the pad says why ("Evelyn wants a snack. Kitchen."). Two thumbs at once (D-pad + action pad) are supported.
 - **Commitment.** Once your thumb starts a HOLD, RUB, SWIPE or MASH, Nick is locked in place until you let go (or the taps stop). Every other timer keeps running.
 - **Gestures.** TAP. HOLD: 1.5 s, or 2 s for watch_this. Letting go drains the ring instead of resetting it. RUB: about 1,200 design-px of back-and-forth drag (~1.2 s). SWIPE: one flick in the direction shown. MASH: 7 taps inside 2.2 s.
-- **The house.** The backyard (grill) runs along the top. Below it the kitchen (counter with coffee, snacks, juice, sippy cups; high chair; back door) and the living room (thermostat, playpen, couch) are one open-plan space. The garage (band-aids and four shoe hiding spots) is under the kitchen. Doorways (64–76 px, drawn as light thresholds with frames): kitchen ↔ backyard, living room ↔ backyard (slider), kitchen ↔ garage, garage ↔ living room. The whole plan is always on screen, so every request timer stays visible.
+- **The house.** The backyard (grill) runs along the top. Below it the kitchen (counter with coffee, snacks, juice, sippy cups; high chair; back door) and the living room (thermostat, playpen, couch) are one open-plan space. The garage (band-aids and four shoe hiding spots) is under the kitchen. Doorways (64–76 px, drawn as light thresholds with frames): kitchen ↔ backyard, living room ↔ backyard (slider), kitchen ↔ garage, garage ↔ living room. The minimap in the corner shows the whole plan, and requests off the 3D view pin to its edge with an arrow.
 - **Pathfinding.** Walkers use A* on an 8 px grid with a 2 px clearance margin, then head for the furthest point on the path they can see. A target on or inside a wall snaps to the nearest open spot.
 - **On my way.** Grabbing the item a kid asked for (snack, juice box, sippy cup, or a band-aid for a boo-boo) tops their timer up to 60% and slows it to 35% speed while Nick carries it; the bubble turns blue and a blue ring marks the kid.
 - **No dead items.** A crying kid takes whatever snack, drink or band-aid Nick holds: stand next to them and tap. The crying stops and Chaos drops by 3.
@@ -107,7 +107,8 @@ An idle player loses around 11:40 AM. The fastest knobs are `WEEKS` (per-week st
 
 ## Interpretations and deviations from the brief
 
-- **3D, third person.** The brief asked for a portrait 2D cross-section; this version renders a 3D house with a follow camera. Rules, timers, gestures and the 390×844 portrait layout are unchanged.
+- **3D, third person.** The brief asked for a portrait 2D cross-section; this version renders a 3D house with a follow camera. Rules, timers and gestures are unchanged.
+- **Full-screen layout.** The layout takes the screen's shape instead of letterboxing a fixed 390×844 frame (`fitLayout` in `src/game/layout.ts`). Phones keep a 390-wide design space and give any extra height to the 3D view; tablets and desktop windows get a wider design space (the action pad and HUD meters are capped, the ability bar stretches). It refits live on rotation, browser-bar changes and window resizes.
 - **Free movement replaces the tap-to-queue loop.** The original brief had a 4-item action queue with numbered markers, a route line, and 0.5 s room hops. That's gone: you walk Nick with a D-pad and jobs trigger by proximity. The brief's one-thumb rule is relaxed: the D-pad and action pad are meant for two thumbs (one at a time still works).
 - **Weeks and a 5:00 PM goal replace the open-ended score.** The brief scored a run by the clock time when Chaos hit 100. Now you survive to 5:00 PM to win the week; the leaderboard ranks runs by week, then by the clock time reached. The 6:00 PM "running late" text became the week-3+ 4:45 PM delay. The clock runs 1.5× faster than the brief's 1 s = 1 min, so a week is ~5 minutes.
 

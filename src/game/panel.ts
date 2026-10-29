@@ -12,10 +12,18 @@ type Txt = (x: number, y: number, s: string, size: number, color?: string, style
 
 const HEADER_H = 40;
 const R = 36; // big button radius
-const L = PANEL.x;
-const T = PANEL.y;
-const CX = PANEL.x + PANEL.w / 2;
-const CY = PANEL.y + HEADER_H + (PANEL.h - HEADER_H) / 2 - 8; // widget center
+// Panel corner and widget center; re-read from PANEL whenever the layout changes (relayout()).
+let L = 0;
+let T = 0;
+let CX = 0;
+let CY = 0;
+function measure() {
+  L = PANEL.x;
+  T = PANEL.y;
+  CX = PANEL.x + PANEL.w / 2;
+  CY = PANEL.y + HEADER_H + (PANEL.h - HEADER_H) / 2 - 8;
+}
+measure();
 
 export class ActionPanel {
   private root: Phaser.GameObjects.Container;
@@ -51,6 +59,13 @@ export class ActionPanel {
     this.fx = scene.add.graphics();
     this.flashText = txt(CX, T + HEADER_H + 4, '', 12, '#ffffff', { fontStyle: 'bold' }).setOrigin(0.5);
     this.root.add([this.bg, this.fx, this.flashText]);
+  }
+
+  // The screen size changed: move to the new PANEL rect and redraw.
+  relayout() {
+    measure();
+    this.flashText.setPosition(CX, T + HEADER_H + 4);
+    this.sig = '';
   }
 
   get active(): Interaction | null {

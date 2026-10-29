@@ -65,6 +65,7 @@ export class GameScene extends Phaser.Scene {
   private toastText!: Phaser.GameObjects.Text;
   private toastT = 0;
   private textBanner!: Phaser.GameObjects.Container;
+  private textBg!: Phaser.GameObjects.Graphics;
   private textFrom!: Phaser.GameObjects.Text;
   private textBody!: Phaser.GameObjects.Text;
   private textQueue: { from: string; body: string }[] = [];
@@ -160,6 +161,7 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keyup', (e: KeyboardEvent) => this.onKey(e, false));
 
     this.sim = new Sim(1);
+    this.relayout();
     this.game.events.emit('scene-ready');
   }
 
@@ -422,27 +424,29 @@ export class GameScene extends Phaser.Scene {
     this.clockText = this.txt(12, 6, '9:00 AM', 28, '#ffffff', { fontStyle: 'bold' }).setDepth(61);
     this.weekText = this.txt(14, 42, 'WEEK 1 · GAME NIGHT 5:00', 9, '#ffd166', { fontStyle: 'bold' }).setDepth(61);
     this.txt(176, 4, 'CHAOS', 9, '#9a9cc0', { fontStyle: 'bold' }).setDepth(61);
-    this.chaosText = this.txt(378, 4, '0', 9, '#ffffff', { fontStyle: 'bold' }).setOrigin(1, 0).setDepth(61);
+    this.chaosText = this.txt(0, 4, '0', 9, '#ffffff', { fontStyle: 'bold' }).setOrigin(1, 0).setDepth(61);
     this.txt(176, 38, 'COFFEE', 9, '#9a9cc0', { fontStyle: 'bold' }).setDepth(61);
-    this.handIcon = this.add.graphics().setDepth(61).setPosition(318, 56);
-    this.handLabel = this.txt(332, 56, '', 10, '#ffffff').setOrigin(0, 0.5).setDepth(61);
+    this.handIcon = this.add.graphics().setDepth(61);
+    this.handLabel = this.txt(0, 56, '', 10, '#ffffff').setOrigin(0, 0.5).setDepth(61);
   }
 
   private buildBar() {
     const labels = ['Dad Joke', 'Call Kayla', 'Because I\nSaid So', ''];
     for (let i = 0; i < 4; i++) {
-      const r = this.barRect(i);
-      this.barTexts.push(
-        this.txt(r.x + r.w / 2, r.y + r.h / 2 - 6, labels[i], 13, '#ffffff', { fontStyle: 'bold', align: 'center' })
-          .setOrigin(0.5)
-          .setDepth(62),
-      );
-      if (i < 3) this.barSub.push(this.txt(r.x + r.w / 2, r.y + r.h - 12, '', 10, '#c9c9d6').setOrigin(0.5).setDepth(62));
+      this.barTexts.push(this.txt(0, 0, labels[i], 13, '#ffffff', { fontStyle: 'bold', align: 'center' }).setOrigin(0.5).setDepth(62));
+      if (i < 3) this.barSub.push(this.txt(0, 0, '', 10, '#c9c9d6').setOrigin(0.5).setDepth(62));
     }
   }
 
+  // Three equal ability buttons and a pause button, 8px gaps, spanning the full width.
+  // Right edge of the HUD meters: the screen edge on a phone, capped on wide screens.
+  private hudRight() {
+    return 176 + Math.min(W - 188, 420);
+  }
+
   private barRect(i: number) {
-    const ws = [100, 100, 100, 50];
+    const bw = (W - 5 * 8 - 50) / 3;
+    const ws = [bw, bw, bw, 50];
     let x = 8;
     for (let k = 0; k < i; k++) x += ws[k] + 8;
     return { x, y: BAR.y + 6, w: ws[i], h: 60 };
@@ -454,21 +458,18 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildOverlays() {
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.25).fillRoundedRect(10, 4, W - 20, 54, 14);
-    bg.fillStyle(0xf8f9fa, 0.97).fillRoundedRect(10, 0, W - 20, 54, 14);
+    const bg = (this.textBg = this.add.graphics());
     const ic = this.add.graphics({ x: 34, y: 27 });
     ic.fillStyle(0x34c759, 1).fillRoundedRect(-14, -14, 28, 28, 7);
     ic.fillStyle(0xffffff, 1).fillEllipse(0, -1, 18, 13).fillTriangle(-6, 3, -9, 9, -1, 4);
     this.textFrom = this.txt(56, 7, '', 12, '#6c757d', { fontStyle: 'bold' });
-    this.textBody = this.txt(56, 24, '', 14, '#22223b', { wordWrap: { width: W - 90 } });
+    this.textBody = this.txt(56, 24, '', 14, '#22223b');
     this.textBanner = this.add.container(0, WORLD.y + 6, [bg, ic, this.textFrom, this.textBody]).setDepth(70).setVisible(false);
 
-    this.toastText = this.txt(W / 2, PANEL.y - 12, '', 14, '#ffffff', {
+    this.toastText = this.txt(0, 0, '', 14, '#ffffff', {
       backgroundColor: '#22223bee',
       padding: { x: 12, y: 7 },
       align: 'center',
-      wordWrap: { width: W - 60 },
     })
       .setOrigin(0.5, 1)
       .setDepth(72)
@@ -483,7 +484,7 @@ export class GameScene extends Phaser.Scene {
     const jt = this.txt(-116, -70, 'DAD JOKE', 12, '#e76f51', { fontStyle: 'bold' });
     this.jokeText = this.txt(0, 2, '', 17, '#22223b', { align: 'center', wordWrap: { width: 296 } }).setOrigin(0.5);
     const groan = this.txt(0, 60, '*group groan*  ·  timers frozen', 11, '#8d8fa8').setOrigin(0.5);
-    this.jokeCard = this.add.container(W / 2, WORLD.y + 250, [jb, ji, jt, this.jokeText, groan]).setDepth(71).setVisible(false);
+    this.jokeCard = this.add.container(0, 0, [jb, ji, jt, this.jokeText, groan]).setDepth(71).setVisible(false);
 
     // FaceTime: a compact strip just above the panel, so it never covers the house's bubbles.
     const mg = this.add.graphics();
@@ -493,15 +494,15 @@ export class GameScene extends Phaser.Scene {
     drawMomFace(face, 17);
     const ml = this.txt(0, 19, 'MIL', 9, '#ffffff', { fontStyle: 'bold' }).setOrigin(0.5);
     this.momTime = this.txt(0, -19, '', 9, '#34c759', { fontStyle: 'bold' }).setOrigin(0.5);
-    this.momWin = this.add.container(44, PANEL.y - 36, [mg, face, ml, this.momTime]).setDepth(69).setVisible(false);
+    this.momWin = this.add.container(0, 0, [mg, face, ml, this.momTime]).setDepth(69).setVisible(false);
 
     const ub = this.add.graphics();
     ub.fillStyle(0x000000, 0.3).fillRoundedRect(-104, -24, 208, 56, 28);
     ub.fillStyle(0x34c759, 1).fillRoundedRect(-106, -28, 212, 56, 28);
     const ut = this.txt(0, 0, '“uh-huh”', 22, '#ffffff', { fontStyle: 'bold' }).setOrigin(0.5);
-    this.uhHuh = this.add.container(W / 2 + 34, PANEL.y - 36, [ub, ut]).setDepth(75).setVisible(false);
+    this.uhHuh = this.add.container(0, 0, [ub, ut]).setDepth(75).setVisible(false);
 
-    this.selectBanner = this.txt(W / 2, WORLD.y + 8, 'Kayla’s on it: tap a request', 14, '#ffffff', {
+    this.selectBanner = this.txt(0, 0, 'Kayla’s on it: tap a request', 14, '#ffffff', {
       backgroundColor: '#e76f51',
       padding: { x: 12, y: 6 },
       fontStyle: 'bold',
@@ -510,7 +511,7 @@ export class GameScene extends Phaser.Scene {
       .setDepth(74)
       .setVisible(false);
 
-    this.alarmText = this.txt(W / 2, WORLD.y + WORLD.h / 2, 'BEEP! BEEP! BEEP!', 30, '#ffffff', {
+    this.alarmText = this.txt(0, 0, 'BEEP! BEEP! BEEP!', 30, '#ffffff', {
       fontStyle: 'bold',
       stroke: '#e5484d',
       strokeThickness: 6,
@@ -518,6 +519,37 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(73)
       .setVisible(false);
+  }
+
+  // Place everything that depends on the screen size (src/game/layout.ts). Called on create and
+  // whenever main.ts refits the layout to a new viewport.
+  relayout() {
+    if (!this.panel) return; // not created yet; create() lays out
+    const cam = this.cameras.main;
+    cam.setSize(W * this.R, H * this.R);
+    const hr = this.hudRight();
+    this.chaosText.setX(hr);
+    this.handIcon.setPosition(hr - 60, 56);
+    this.handLabel.setX(hr - 46);
+    for (let i = 0; i < 4; i++) {
+      const r = this.barRect(i);
+      this.barTexts[i].setPosition(r.x + r.w / 2, r.y + r.h / 2 - 6);
+      this.barSub[i]?.setPosition(r.x + r.w / 2, r.y + r.h - 12);
+    }
+    // Text banner: full width on a phone, capped and centered on wide screens.
+    const bw = Math.min(W - 20, 520);
+    this.textBg.clear();
+    this.textBg.fillStyle(0x000000, 0.25).fillRoundedRect(10, 4, bw, 54, 14);
+    this.textBg.fillStyle(0xf8f9fa, 0.97).fillRoundedRect(10, 0, bw, 54, 14);
+    this.textBody.setWordWrapWidth(bw - 70);
+    this.textBanner.setX((W - bw) / 2 - 10);
+    this.toastText.setX(W / 2).setY(PANEL.y - 12).setWordWrapWidth(Math.min(W - 60, 460));
+    this.jokeCard.setPosition(W / 2, WORLD.y + Math.min(250, WORLD.h / 2));
+    this.momWin.setPosition(44, PANEL.y - 36);
+    this.uhHuh.setPosition(W / 2 + 34, PANEL.y - 36);
+    this.selectBanner.setPosition(W / 2, WORLD.y + 8);
+    this.alarmText.setPosition(W / 2, WORLD.y + WORLD.h / 2);
+    this.panel.relayout();
   }
 
   // ------------------------------------------------------------ positions
@@ -765,7 +797,7 @@ export class GameScene extends Phaser.Scene {
     g.fillStyle(COLORS.hud, 1).fillRect(0, HUD.y, W, HUD.h);
     this.clockText.setText(sim.clock);
     const cx = 176;
-    const cw = 202;
+    const cw = this.hudRight() - cx;
     const ch = sim.chaos / 100;
     g.fillStyle(0x1d1f2b, 1).fillRoundedRect(cx, 16, cw, 18, 9);
     const col = ch < 0.5 ? COLORS.chaosLo : ch < 0.8 ? COLORS.chaosMid : COLORS.chaosHi;
@@ -777,7 +809,7 @@ export class GameScene extends Phaser.Scene {
     g.fillStyle(0x1d1f2b, 1).fillRoundedRect(cx, 50, fw, 12, 6);
     g.fillStyle(cf < COFFEE.slowBelow ? COLORS.bad : COLORS.coffee, 1).fillRoundedRect(cx + 2, 52, Math.max(6, (fw - 4) * cf), 8, 4);
     g.lineStyle(1, 0xffffff, 0.3).lineBetween(cx + fw * COFFEE.slowBelow, 50, cx + fw * COFFEE.slowBelow, 62);
-    g.fillStyle(0x3d405b, 1).fillRoundedRect(306, 44, 74, 24, 8);
+    g.fillStyle(0x3d405b, 1).fillRoundedRect(cx + cw - 72, 44, 74, 24, 8);
     const h = sim.nick.hand;
     if (this.handKey !== `${h}`) {
       this.handKey = `${h}`;

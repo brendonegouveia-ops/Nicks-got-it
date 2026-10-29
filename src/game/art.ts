@@ -80,7 +80,7 @@ export function drawNick(g: G) {
   g.fillStyle(SKIN, 1);
   g.fillRect(-4, -78, 8, 6);
   g.fillCircle(0, -86, 12);
-  g.fillStyle(0x6b4423, 1);
+  g.fillStyle(0xecc96e, 1); // blonde
   g.fillEllipse(0, -95, 25, 10);
   g.fillRect(-12, -96, 3, 8);
   g.fillRect(9, -96, 3, 8);
