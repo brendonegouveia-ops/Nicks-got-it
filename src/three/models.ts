@@ -77,6 +77,8 @@ function rig(root: THREE.Group, body: THREE.Group, legs: THREE.Object3D[], arms:
 }
 
 // Nick: teal polo, cargo shorts, white socks with sandals, sunglasses parked on his head, coffee in his right hand.
+const NICK_HAIR = 0xecc96e;
+
 export function makeNick(): Rig {
   const root = new THREE.Group();
   const body = new THREE.Group();
@@ -112,12 +114,12 @@ export function makeNick(): Rig {
   const head = new THREE.Group();
   head.position.set(0, 66, 0);
   head.add(ball(9, SKIN));
-  const hair = ball(9.4, 0x6b4423);
+  const hair = ball(9.4, NICK_HAIR); // blonde
   hair.scale.set(1, 0.55, 1);
   hair.position.y = 3.5;
   head.add(hair);
   head.add(box(14, 2.6, 4, INK, 0, 7.5, 4)); // sunglasses on his head
-  head.add(box(9, 2, 1, 0x8a6a50, 0, -5, 8.2)); // stubble
+  head.add(box(9, 2, 1, 0xc9a66b, 0, -5, 8.2)); // stubble
   eyes(head, 9, 0.5);
   body.add(head);
   return rig(root, body, legs, [armL, armR], 76, hand);
