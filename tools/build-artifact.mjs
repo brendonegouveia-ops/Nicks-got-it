@@ -88,7 +88,7 @@ const doc = standalone
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="description" content="Kayla’s out until 5. Game night’s at 5. Nick said “I got it.” A one-thumb dad-survival game." />
 <meta property="og:title" content="Nick's Got It" />
-<meta property="og:description" content="Survive Saturday with the kids until 5:00 PM so Nick can make game night." />
+<meta property="og:description" content="Survive Thursday with the kids until 5:00 PM so Nick can make game night." />
 <title>Nick's Got It</title>
 </head>
 <body>
