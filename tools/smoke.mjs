@@ -60,7 +60,7 @@ const touch = async (type, x, y) => {
   await cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x: p.x, y: p.y }] });
 };
 // Action pad geometry (src/game/layout.ts PANEL + panel.ts): center and the two stacked rows.
-const { PANEL, DPAD } = LAYOUT;
+const { PANEL, STICK, ABIL } = LAYOUT;
 const PX = PANEL.x + PANEL.w / 2;
 const PY = PANEL.y + 94;
 const ROW1 = PANEL.y + 69;
@@ -71,16 +71,16 @@ const tapPanel = async (x = PX, y = PY) => {
 };
 const WORLD_Y = 74;
 
-// D-pad: hold "up" from the living room until Nick walks out the slider into the backyard.
+// Joystick: push "up" from the living room until Nick walks out the slider into the backyard.
 await sim(() => (window.__nick.scene.timeScale = 1));
 const start = await sim(() => ({ ...window.__nick.scene.sim.nick }));
-await touch('touchStart', DPAD.cx, DPAD.cy - 44);
+await touch('touchStart', STICK.cx, STICK.cy - 44);
 await page.waitForFunction(() => window.__nick.scene.sim.nick.room === 'backyard', null, { timeout: 30000 });
 await page.screenshot({ path: `${OUT}/03-walking.png` });
-await touch('touchEnd', DPAD.cx, DPAD.cy - 44);
+await touch('touchEnd', STICK.cx, STICK.cy - 44);
 await page.waitForTimeout(200);
 const after = await sim(() => ({ ...window.__nick.scene.sim.nick, steering: window.__nick.scene.sim.steering }));
-if (after.steering) fail('still walking after releasing the D-pad');
+if (after.steering) fail('still walking after releasing the joystick');
 console.log('walked', start.room, '->', after.room, `(${Math.round(after.x)},${Math.round(after.y)})`);
 await sim(() => (window.__nick.scene.timeScale = 0.25));
 
@@ -142,21 +142,25 @@ const check = async (label, id) => {
   await page.screenshot({ path: `${OUT}/04b-choice.png` });
   await tapPanel(PX, ROW1);
   await waitPanel('rub');
-  await touch('touchStart', 180, PY);
+  // Rub back and forth across the card (it floats bottom-left, beside the joystick).
+  const r0 = PANEL.x + 14;
+  const r1 = PANEL.x + PANEL.w - 14;
+  await touch('touchStart', r0, PY);
   for (let i = 0; i < 14 && !(await gone(id)); i++) {
-    for (let x = 180; x <= 370; x += 38) await touch('touchMove', x, PY + (i % 2) * 4);
-    for (let x = 370; x >= 180; x -= 38) await touch('touchMove', x, PY);
+    for (let x = r0; x <= r1; x += 38) await touch('touchMove', x, PY + (i % 2) * 4);
+    for (let x = r1; x >= r0; x -= 38) await touch('touchMove', x, PY);
   }
-  await touch('touchEnd', 180, PY);
+  await touch('touchEnd', r0, PY);
   await check('choice+rub', id);
 }
 { // SWIPE (spill under Nick's feet)
   const id = await inject({ kind: 'spill', owner: 'eloise', x: 300, y: 310, dir: 'left' });
   await waitPanel('swipe');
   await page.screenshot({ path: `${OUT}/04c-swipe.png` });
-  await touch('touchStart', 360, PY);
-  for (let x = 340; x >= 190; x -= 30) await touch('touchMove', x, PY + 2);
-  await touch('touchEnd', 190, PY + 2);
+  const s0 = PANEL.x + PANEL.w - 12;
+  await touch('touchStart', s0, PY);
+  for (let x = s0 - 20; x >= s0 - 170; x -= 30) await touch('touchMove', x, PY + 2);
+  await touch('touchEnd', s0 - 170, PY + 2);
   await check('swipe', id);
 }
 { // CHOICE (screen time: No)
@@ -203,9 +207,9 @@ await sim(() => {
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${OUT}/05-nap.png` });
 
-// Dad joke via the ability bar.
+// Dad joke via its button above the joystick.
 await sim(() => { const s = window.__nick.scene; s.textQueue.length = 0; });
-await tapDesign(58, LAYOUT.H - 38); // Dad Joke button (ability bar)
+await tapDesign(ABIL[0].x, ABIL[0].y);
 await page.waitForFunction(() => window.__nick.scene.jokeCard.visible && window.__nick.scene.jokeCard.alpha > 0.9);
 await page.screenshot({ path: `${OUT}/06-dad-joke.png` });
 if (!(await sim(() => window.__nick.scene.sim.frozen))) fail('dad joke did not freeze');
@@ -223,7 +227,8 @@ await page.waitForFunction(() => window.__nick.scene.sim.facetime.prompt, null, 
 await page.screenshot({ path: `${OUT}/07-facetime.png` });
 const missedBefore = await sim(() => window.__nick.scene.sim.facetime.missed);
 const promptId = await sim(() => window.__nick.scene.sim.facetime.prompt.id);
-const uh = await toPage(LAYOUT.W / 2 + 34, PANEL.y - 38);
+const uhAt = await sim(() => ({ x: window.__nick.scene.uhHuh.x, y: window.__nick.scene.uhHuh.y }));
+const uh = await toPage(uhAt.x, uhAt.y);
 await page.touchscreen.tap(uh.x, uh.y);
 const ft = await sim(() => ({ p: window.__nick.scene.sim.facetime.prompt?.id ?? null, m: window.__nick.scene.sim.facetime.missed }));
 if (ft.p === promptId || ft.m !== missedBefore) fail('uh-huh tap missed ' + JSON.stringify(ft));

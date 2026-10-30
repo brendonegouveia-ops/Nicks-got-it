@@ -7,7 +7,7 @@ import { beginRun, submitScore, topScores, type ScoreRow } from './leaderboard';
 import { load, save } from './storage';
 import { GameScene } from './game/GameScene';
 import { World3D } from './three/World3D';
-import { DPAD, H, PANEL, W, fitLayout } from './game/layout';
+import { ABIL, H, PANEL, STICK, W, fitLayout } from './game/layout';
 import { clockString, type Sim } from './sim/sim';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -305,7 +305,7 @@ function showWon(sim: Sim) {
   save(saved);
   $('wonKicker').textContent = `Week ${sim.week} · ${clockString(sim.goalMin)}`;
   $('wonTitle').textContent = `Nick made it to ${sim.theme.toLowerCase()}!`;
-  $('wonQuote').textContent = `“Go. Have fun. I’ve got it.” — ${CAST.kayla.name}`;
+  $('wonQuote').textContent = `“Go. Have fun. I’ve got it.” — ${CAST.wife.name}`;
   const s = sim.stats;
   $('wonStats').innerHTML = [
     ['handled', s.handled],
@@ -329,7 +329,7 @@ $('wonTitleBtn').addEventListener('click', () => {
 // ---------------------------------------------------------------- end card
 function endQuote(sim: Sim): string {
   const lines = END_LINES[sim.topCause()] ?? END_LINES.default;
-  return `“${lines[Math.floor(Math.random() * lines.length)]}” — ${CAST.kayla.name}`;
+  return `“${lines[Math.floor(Math.random() * lines.length)]}” — ${CAST.wife.name}`;
 }
 
 function recordBest(week: number, minutes: number): boolean {
@@ -437,4 +437,4 @@ function escapeHtml(s: string) {
 }
 
 // Expose a tiny handle for the headless smoke test.
-(window as unknown as { __nick: unknown }).__nick = { scene, game, pause, resume, get paused() { return paused; }, get layout() { return { W, H, PANEL: { ...PANEL }, DPAD: { ...DPAD } }; } };
+(window as unknown as { __nick: unknown }).__nick = { scene, game, pause, resume, get paused() { return paused; }, get layout() { return { W, H, PANEL: { ...PANEL }, STICK: { ...STICK }, ABIL: ABIL.map((a) => ({ ...a })) }; } };

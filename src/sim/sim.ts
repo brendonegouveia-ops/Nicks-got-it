@@ -15,7 +15,7 @@ import {
   GRILL,
   GROANS,
   ITEM_NAMES,
-  KAYLA_CALL_REPLIES,
+  BACKUP_CALLS,
   MELTDOWN_DELAY_SEC,
   MOVE,
   NAP,
@@ -175,7 +175,7 @@ export interface Stats {
   cries: number;
   smokeAlarms: number;
   jokes: number;
-  kaylaCalls: number;
+  backupCalls: number;
   dirt: number;
   screenYes: number;
   coffeeRefills: number;
@@ -236,7 +236,7 @@ export class Sim {
     cries: 0,
     smokeAlarms: 0,
     jokes: 0,
-    kaylaCalls: 0,
+    backupCalls: 0,
     dirt: 0,
     screenYes: 0,
     coffeeRefills: 0,
@@ -269,7 +269,7 @@ export class Sim {
   freezeLeft = 0;
   jokeCd = 0;
   bissCd = 0;
-  kaylaCharges: number = ABILITIES.callKayla.charges;
+  backupCharges: number = ABILITIES.callBackup.charges;
 
   nap = { state: 'pending' as 'pending' | 'asleep' | 'done' | 'woken', noise: 0 };
   noraCrankyUntil = 0;
@@ -533,7 +533,7 @@ export class Sim {
 
     if (this.t >= this.nextAmbient) {
       this.nextAmbient = this.t + this.rng.range(80, 140);
-      if (this.t > 20) this.text({ from: 'Kayla', body: this.rng.pick(TEXTS.ambient) });
+      if (this.t > 20) this.text(this.rng.pick(TEXTS.ambient));
     }
   }
 
@@ -1433,18 +1433,19 @@ export class Sim {
     return joke;
   }
 
-  callKayla(reqId: number): string | null {
+  // Call for Backup: Nick's parents, then his wife, take one request off his plate.
+  callBackup(reqId: number): string | null {
     const r = this.req(reqId);
-    if (!r || this.kaylaCharges <= 0 || this.over) return null;
-    const reply = KAYLA_CALL_REPLIES[ABILITIES.callKayla.charges - this.kaylaCharges] ?? 'k';
-    this.kaylaCharges--;
-    this.stats.kaylaCalls++;
+    if (!r || this.backupCharges <= 0 || this.over) return null;
+    const call = BACKUP_CALLS[ABILITIES.callBackup.charges - this.backupCharges] ?? BACKUP_CALLS[BACKUP_CALLS.length - 1];
+    this.backupCharges--;
+    this.stats.backupCalls++;
     if (r.kind === 'thermostat') this.thermostatAt = this.t + this.rng.range(...THERMOSTAT.gapSec);
     if (r.kind === 'flip') this.grill.cook = GRILL.flipEverySec;
     this.resolve(r);
-    this.emit({ type: 'text', from: 'Kayla', body: reply });
+    this.emit({ type: 'text', from: call.from, body: call.body });
     this.emit({ type: 'sfx', name: 'ding' });
-    return reply;
+    return call.body;
   }
 
   becauseISaidSo(): number {
