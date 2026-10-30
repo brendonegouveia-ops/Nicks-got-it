@@ -1,6 +1,7 @@
-// The action pad: right half of the bottom deck. It shows the job Nick is standing next to and
-// resolves it with a big gesture. Starting a gesture locks Nick in place (sim.engage).
-// With nothing in reach it shows what's in his free hand and a hint.
+// The action card: floats over the game, bottom-left beside the joystick. It shows the job Nick is
+// standing next to and resolves it with a big gesture; a plain tap job is just a bubble next to the
+// joystick. Starting a gesture locks Nick in place (sim.engage). With nothing in reach it shows only
+// what Nick is holding (one thing at a time) and any note; otherwise the game shows through.
 import Phaser from 'phaser';
 import { GESTURES, ITEM_NAMES } from '../config';
 import { type Interaction, type Sim } from '../sim/sim';
@@ -17,11 +18,15 @@ let L = 0;
 let T = 0;
 let CX = 0;
 let CY = 0;
+let BX = 0; // tap bubble, in the card's bottom-right corner next to the joystick
+let BY = 0;
 function measure() {
   L = PANEL.x;
   T = PANEL.y;
   CX = PANEL.x + PANEL.w / 2;
   CY = PANEL.y + HEADER_H + (PANEL.h - HEADER_H) / 2 - 8;
+  BX = PANEL.x + PANEL.w - 46;
+  BY = PANEL.y + PANEL.h - 50;
 }
 measure();
 
@@ -33,6 +38,7 @@ export class ActionPanel {
   private texts: Phaser.GameObjects.GameObject[] = [];
   private sig = '';
   private buttons: Btn[] = [];
+  private hitRect: { x: number; y: number; w: number; h: number } | null = null; // what's on screen right now
 
   private progress = 0;
   private holding = false;
@@ -46,7 +52,7 @@ export class ActionPanel {
   private flash = '';
   private flashT = 0;
 
-  selectMode = false; // Call Kayla is waiting for a request to be picked
+  selectMode = false; // Call for Backup is waiting for a request to be picked
   onCancelSelect: () => void = () => {};
 
   constructor(
@@ -73,7 +79,8 @@ export class ActionPanel {
   }
 
   contains(x: number, y: number) {
-    return x >= PANEL.x - 4 && x < PANEL.x + PANEL.w + 6 && y >= PANEL.y - 2 && y < PANEL.y + PANEL.h + 2;
+    const r = this.hitRect;
+    return !!r && x >= r.x - 4 && x < r.x + r.w + 6 && y >= r.y - 4 && y < r.y + r.h + 4;
   }
 
   // ------------------------------------------------------------ input
@@ -233,7 +240,7 @@ export class ActionPanel {
 
     const sig = it
       ? `i${it.id}|${it.kind}|${it.multi?.map((m) => +m.done).join('')}|${it.options?.map((o) => +o.enabled).join('')}`
-      : `n|${sim.nick.hand}|${this.selectMode}|${sim.note}`;
+      : `n|${sim.nick.hand}|${this.selectMode}|${sim.note}|${sim.t < 15}`;
     if (sig !== this.sig) {
       const fresh = it && !this.sig.startsWith(`i${it.id}|`);
       this.sig = sig;
@@ -288,11 +295,39 @@ export class ActionPanel {
     const it = this.active;
     const g = this.bg;
     g.clear();
+    this.hitRect = null;
     if (!it) {
       this.root.y = 0;
       this.root.alpha = 1;
       return this.buildIdle();
     }
+    this.hitRect = { x: L, y: T, w: PANEL.w, h: PANEL.h };
+    if (it.kind === 'tap') this.buildTapBubble(it);
+    else this.buildCard(it);
+    if (slide) {
+      this.root.y = 30;
+      this.root.alpha = 0.4;
+      this.scene.tweens.add({ targets: this.root, y: 0, alpha: 1, duration: 120, ease: 'Cubic.easeOut' });
+    }
+  }
+
+  // A tap job: a big bubble next to the joystick with what it does beside it. Tap anywhere on the card area.
+  private buildTapBubble(it: Interaction) {
+    const g = this.bg;
+    const title = this.addText(
+      this.txt(BX - 50, BY - 8, it.title, 13, '#22223b', { fontStyle: 'bold', align: 'right', wordWrap: { width: PANEL.w - 104 }, maxLines: 2 }).setOrigin(1, 0.5),
+    );
+    const hint = this.addText(this.txt(BX - 50, BY + title.height / 2 + 2, it.hint, 10, '#6c5f5b', { fontStyle: 'bold' }).setOrigin(1, 0));
+    const tw = Math.max(title.width, hint.width);
+    const top = Math.min(BY - 26, BY - 8 - title.height / 2 - 8);
+    const bot = Math.max(BY + 26, hint.y + hint.height + 8);
+    g.fillStyle(0x000000, 0.22).fillRoundedRect(BX - 62 - tw, top + 3, tw + 40, bot - top, 14);
+    g.fillStyle(COLORS.panel, 0.96).fillRoundedRect(BX - 62 - tw, top, tw + 40, bot - top, 14);
+    this.addIcon(it.icon, BX, BY, 34, 'big');
+  }
+
+  private buildCard(it: Interaction) {
+    const g = this.bg;
     g.fillStyle(0x000000, 0.25).fillRoundedRect(L, T + 3, PANEL.w, PANEL.h, 16);
     g.fillStyle(COLORS.panel, 1).fillRoundedRect(L, T, PANEL.w, PANEL.h, 16);
     g.lineStyle(3, COLORS.accent, 1).strokeRoundedRect(L, T, PANEL.w, PANEL.h, 16);
@@ -300,11 +335,6 @@ export class ActionPanel {
     this.addText(this.txt(L + 36, T + 5, it.title, 13, '#22223b', { fontStyle: 'bold', wordWrap: { width: PANEL.w - 44 }, maxLines: 2 }));
     this.addText(this.txt(L + 36, T + 23, it.hint, 10, '#6c5f5b'));
     this.buildWidget(it);
-    if (slide) {
-      this.root.y = 30;
-      this.root.alpha = 0.4;
-      this.scene.tweens.add({ targets: this.root, y: 0, alpha: 1, duration: 120, ease: 'Cubic.easeOut' });
-    }
   }
 
   private buildWidget(it: Interaction) {
@@ -351,9 +381,11 @@ export class ActionPanel {
     const big = this.texts.find((t) => t.name === 'big') as Phaser.GameObjects.Graphics | undefined;
     switch (it.kind) {
       case 'tap': {
-        const p = 1 + Math.sin(this.now * 8) * 0.04;
-        g.fillStyle(COLORS.accent, 0.25).fillCircle(cx, CY, (R + 6) * p);
-        g.lineStyle(4, COLORS.accent, 1).strokeCircle(cx, CY, R * p);
+        const p = 1 + Math.sin(this.now * 8) * 0.05;
+        g.fillStyle(0x000000, 0.22).fillCircle(BX, BY + 3, R + 4);
+        g.fillStyle(COLORS.accent, 0.3).fillCircle(BX, BY, (R + 8) * p);
+        g.fillStyle(0xffffff, 1).fillCircle(BX, BY, R);
+        g.lineStyle(4, COLORS.accent, 1).strokeCircle(BX, BY, R * p);
         break;
       }
       case 'hold':
@@ -408,44 +440,50 @@ export class ActionPanel {
   private buildIdle() {
     const sim = this.sim();
     const g = this.bg;
-    g.fillStyle(0x2b2d42, 0.95).fillRoundedRect(L, T, PANEL.w, PANEL.h, 16);
     if (this.selectMode) {
+      this.hitRect = { x: L, y: T, w: PANEL.w, h: PANEL.h };
+      g.fillStyle(0x2b2d42, 0.95).fillRoundedRect(L, T, PANEL.w, PANEL.h, 16);
       g.lineStyle(3, 0xe76f51, 1).strokeRoundedRect(L, T, PANEL.w, PANEL.h, 16);
-      this.addIcon('kayla', L + 24, T + 28, 28);
-      this.addText(this.txt(L + 46, T + 14, 'Call Kayla', 16, '#ffffff', { fontStyle: 'bold' }));
-      this.addText(this.txt(L + 12, T + 52, 'Tap the request she should handle.', 12, '#f2e9e4', { wordWrap: { width: PANEL.w - 24 } }));
+      this.addIcon('backup', L + 24, T + 28, 28);
+      this.addText(this.txt(L + 46, T + 14, 'Call for Backup', 16, '#ffffff', { fontStyle: 'bold' }));
+      this.addText(this.txt(L + 12, T + 52, 'Tap the request to hand off. Your parents pick up first, then your wife.', 12, '#f2e9e4', { wordWrap: { width: PANEL.w - 24 } }));
       const b = { x: L + 12, y: T + PANEL.h - 54, w: PANEL.w - 24, h: 44, on: () => this.onCancelSelect() };
       g.fillStyle(0x4a4e69, 1).fillRoundedRect(b.x, b.y, b.w, b.h, 12);
       this.addText(this.txt(b.x + b.w / 2, b.y + b.h / 2, 'Never mind', 15, '#ffffff').setOrigin(0.5));
       this.buttons.push(b);
       return;
     }
+    // Nothing in reach: a slim pill for what Nick's holding, and a note above it if there is one.
     const h = sim.nick.hand;
-    this.addText(this.txt(L + 12, T + 8, 'FREE HAND', 10, '#c9c9d6', { fontStyle: 'bold' }));
-    g.fillStyle(0x3d405b, 1).fillRoundedRect(L + 8, T + 24, PANEL.w - 16, 40, 12);
+    let y = T + PANEL.h;
     if (h) {
-      this.addIcon(h === 'nora' ? 'nora' : h === 'phone' ? 'phone' : h, L + 30, T + 44, 22);
-      const label = h === 'nora' ? 'Nora (on the hip)' : h === 'phone' ? 'Phone (mother-in-law)' : ITEM_NAMES[h];
-      this.addText(this.txt(L + 48, T + 44, label, 13, '#ffffff').setOrigin(0, 0.5));
-    } else {
-      this.addText(this.txt(L + 18, T + 44, 'Empty. (Other: coffee.)', 12, '#8d8fa8').setOrigin(0, 0.5));
+      const ph = 44;
+      y -= ph;
+      this.hitRect = { x: L, y, w: PANEL.w, h: ph };
+      g.fillStyle(0x22223b, 0.88).fillRoundedRect(L, y, PANEL.w, ph, 14);
+      this.addIcon(h === 'nora' ? 'nora' : h === 'phone' ? 'phone' : h, L + 22, y + ph / 2, 20);
+      const name = h === 'nora' ? 'Nora, on your hip' : h === 'phone' ? 'Mom & Dad' : ITEM_NAMES[h];
+      const droppable = h !== 'nora' && h !== 'phone';
+      this.addText(this.txt(L + 40, y + 7, h === 'phone' ? 'ON FACETIME' : 'HOLDING', 9, '#a5a7c4', { fontStyle: 'bold' }));
+      this.addText(this.txt(L + 40, y + 20, name.charAt(0).toUpperCase() + name.slice(1), 13, '#ffffff', { fontStyle: 'bold' }));
+      if (droppable) {
+        const b = { x: L + PANEL.w - 84, y: y + 6, w: 78, h: ph - 12, on: () => this.sim().dropHand() };
+        g.fillStyle(0x4a4e69, 1).fillRoundedRect(b.x, b.y, b.w, b.h, 10);
+        this.addText(this.txt(b.x + b.w / 2, b.y + b.h / 2, 'Put down', 12, '#ffffff').setOrigin(0.5));
+        this.buttons.push(b);
+      }
+      y -= 6;
     }
-    let y = T + 70;
-    if (h && h !== 'nora' && h !== 'phone') {
-      const b = { x: L + 8, y, w: PANEL.w - 16, h: 36, on: () => this.sim().dropHand() };
-      g.fillStyle(0x4a4e69, 1).fillRoundedRect(b.x, b.y, b.w, b.h, 12);
-      this.addText(this.txt(b.x + b.w / 2, b.y + b.h / 2, 'Put it down', 14, '#ffffff').setOrigin(0.5));
-      this.buttons.push(b);
-      y += 42;
+    const line = sim.note ?? (sim.t < 15 && !h ? 'Use the joystick to walk. Walk up to a kid or a counter to help.' : null);
+    if (line) {
+      const t = this.addText(
+        this.txt(L + 12, 0, line, sim.note ? 13 : 12, sim.note ? '#ffd166' : '#ffffff', { fontStyle: 'bold', wordWrap: { width: PANEL.w - 24 } }),
+      );
+      const th = t.height + 14;
+      y -= th;
+      t.setY(y + 7);
+      g.fillStyle(0x22223b, 0.82).fillRoundedRect(L, y, PANEL.w, th, 12);
     }
-    const line = sim.note ?? 'Walk with the arrows. Stand next to a kid or a station to help.';
-    this.addText(
-      this.txt(CX, (y + T + PANEL.h) / 2, line, sim.note ? 13 : 11, sim.note ? '#ffd166' : '#a5a7c4', {
-        align: 'center',
-        wordWrap: { width: PANEL.w - 20 },
-        fontStyle: sim.note ? 'bold' : 'normal',
-      }).setOrigin(0.5),
-    );
   }
 }
 

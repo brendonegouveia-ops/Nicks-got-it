@@ -14,12 +14,16 @@ const WALL_H = 56;
 const CAM_OFFSET = new THREE.Vector3(0, 250, 215);
 const LOOK_OFFSET = new THREE.Vector3(0, 18, -40);
 
+const FOV_REF = 46; // vertical field of view (degrees) for a view VIEW_REF_H design px tall
+const VIEW_REF_H = 480;
+const DEG = Math.PI / 180;
+
 type RingSpec = { x: number; z: number; r: number; color: number; alpha?: number; width?: number };
 
 export class World3D {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(46, WORLD.w / WORLD.h, 4, 4000);
+  readonly camera = new THREE.PerspectiveCamera(FOV_REF, WORLD.w / WORLD.h, 4, 4000);
   private walls: THREE.Mesh[] = [];
   private wallMats = new Map<THREE.Mesh, THREE.MeshLambertMaterial>();
   private rigs = new Map<ActorId | 'nick', Rig>();
@@ -50,6 +54,8 @@ export class World3D {
     this.s = cssW / W;
     this.renderer.setSize(cssW, cssH, false);
     this.camera.aspect = WORLD.w / WORLD.h;
+    // Same scale on every screen: a taller view shows more house instead of a bigger Nick.
+    this.camera.fov = (2 * Math.atan(Math.tan((FOV_REF / 2) * DEG) * (WORLD.h / VIEW_REF_H)) * 180) / Math.PI;
     this.camera.updateProjectionMatrix();
     this.ready = true;
   }

@@ -12,7 +12,7 @@ export const GAME = {
 // Every timer (request patience, cooldowns, FaceTime, cries) stays in real seconds.
 export const CLOCK = { minutesPerSec: 1.5 };
 
-// Weeks: Nick has to make it to 5:00 PM (Kayla's home, he's off to game night at Carlson's).
+// Weeks: Nick has to make it to 5:00 PM (his wife's home from work and errands; he's off to game night at Carlson's).
 // Each week the same day gets harder.
 export const WEEKS = {
   goalMin: 480, // 5:00 PM
@@ -23,7 +23,7 @@ export const WEEKS = {
   decayStep: 0.08, // chaos drains 8% slower per week
   decayMin: 0.4,
   fightStep: 0.25,
-  lateFromWeek: 3, // from this week Kayla texts "running late" at 4:45 and the goal slides to 5:30
+  lateFromWeek: 3, // from this week his wife texts "running late" at 4:45 and the goal slides to 5:30
   lateBy: 30,
   // Generic game nights only (no brand names).
   themes: [
@@ -47,8 +47,8 @@ export const CAST = {
   nora: { name: 'Nora', age: 2 },
   tyler: { name: 'Tyler', age: 7, note: 'the neighbor kid' },
   eloise: { name: 'Eloise', note: 'the dog (scruffy, medium-sized)' },
-  kayla: { name: 'Kayla', note: "Nick's wife, offscreen: end card, texts, Call Kayla" },
-  kaylasMom: { name: "Kayla's mom", note: 'offscreen: FaceTime at 3:00 PM' },
+  wife: { name: "Nick's wife", note: 'offscreen: at work, then house errands; texts, Call for Backup, end card' },
+  parents: { name: 'Mom & Dad', note: "Nick's parents, offscreen: texts, Call for Backup, FaceTime at 3:00 PM" },
 } as const;
 
 // ---------------------------------------------------------------- house
@@ -211,7 +211,7 @@ export const FACETIME = {
 
 export const ABILITIES = {
   dadJoke: { cooldownSec: 25, freezeSec: 3 },
-  callKayla: { charges: 2 },
+  callBackup: { charges: 2 },
   becauseISaidSo: { cooldownSec: 40 },
 };
 
@@ -230,32 +230,46 @@ export const TIMELINE = {
 };
 
 // ---------------------------------------------------------------- copy
+// Text senders as they'd appear in Nick's phone. His wife is at work, then running errands for the
+// house; his parents check in. Everyone's on the same team.
+export const WIFE = 'Wife';
+export const MOM = 'Mom';
+export const DAD = 'Dad';
+
+export type TextMsg = { from: string; body: string };
+
 export const TEXTS = {
-  start: { from: 'Kayla', body: 'Thank you SO much babe 💕 Back by 5 so you can make game night!' },
-  leaving: { from: 'Kayla', body: 'Leaving now! Don’t let them burn the house down before game night 😘' },
-  noraJoins: { from: 'Kayla', body: 'Her show ended. She’s all yours 😘' },
-  dogJoins: { from: 'Kayla', body: 'Did you latch the crate? The crate has a latch.' },
-  lunchRush: { from: 'Kayla', body: 'Lunch?? Please not just goldfish crackers' },
+  start: { from: WIFE, body: 'Thank you for holding down the fort ❤️ Work till 4, then Costco + pharmacy. Home by 5 so you can make game night!' },
+  leaving: { from: WIFE, body: 'Errands done, heading home! Get your game night stuff ready 🎲' },
+  noraJoins: { from: WIFE, body: 'Nora’s show should be ending about now. You’ve got this 💪' },
+  dogJoins: { from: WIFE, body: 'Crate latch sticks, jiggle it left. Ask me how I know 🙃' },
+  lunchRush: { from: WIFE, body: 'Mac & cheese is in the pantry, top shelf. Lunch rush incoming!' },
   tyler: { from: 'Tyler', body: 'Can Tyler come over?' },
-  nap: { from: 'Kayla', body: 'Nap at 1!! Couch is fine. DON’T let Eloise bark' },
-  noraWakes: { from: 'Kayla', body: 'Is she up? How was the nap?' },
-  faceTime: { from: "Kayla's mom", body: 'FaceTime… ☎️' },
-  runningLate: { from: 'Kayla', body: 'running late 🙃 like 30 min' },
+  nap: { from: WIFE, body: 'Nap at 1! Couch works. Keep Eloise quiet if you can 🤞' },
+  noraWakes: { from: WIFE, body: 'Is she up? How’d the nap go?' },
+  faceTime: { from: 'Mom & Dad', body: 'FaceTime… ☎️ They want to see the grandkids.' },
+  runningLate: { from: WIFE, body: 'Pharmacy line is wild 🙃 like 30 more min. So sorry!!' },
   // Ambient texts, drawn at random once in a while.
   ambient: [
-    'how’s it going?? 😊',
-    'did they eat anything green',
-    'Nora needs sunscreen if she’s outside',
-    'pls don’t touch the thermostat',
-    'Evelyn says you said a bad word?',
-    'is the grill on? Why is the grill on',
-    'love you! you got this 💪',
-    'did you find the other shoe',
-  ],
+    { from: WIFE, body: 'how’s it going?? 😊' },
+    { from: WIFE, body: 'grabbed more juice boxes, we were almost out' },
+    { from: WIFE, body: 'Nora needs sunscreen if she’s outside' },
+    { from: WIFE, body: 'thermostat’s at 72. it’s perfect. nobody touch it 😂' },
+    { from: WIFE, body: 'proud of you. you’re crushing it 💪' },
+    { from: WIFE, body: 'the other shoe is ALWAYS in the garage' },
+    { from: MOM, body: 'The kids look so big in your pictures! ❤️' },
+    { from: MOM, body: 'Your father wants to know if you’re using the grill right.' },
+    { from: DAD, body: 'Low and slow on those burgers. Don’t press them.' },
+    { from: DAD, body: 'Proud of you, son. Game night is important.' },
+  ] as TextMsg[],
 };
 
-export const KAYLA_CALL_REPLIES = ['Sure babe! 💕', 'k'];
-export const KAYLA_OUT_OF_CHARGES = 'Kayla is “in a meeting.” Her third one today.';
+// Call for Backup: each call reaches someone else. Twice per run.
+export const BACKUP_CALLS: TextMsg[] = [
+  { from: MOM, body: 'Dad and I swung by on the way to the store. Handled it! ❤️' },
+  { from: WIFE, body: 'On my lunch break, took care of it from here. Team effort 💪' },
+];
+export const BACKUP_OUT = 'Everyone’s busy. You’re the backup now.';
 
 export const DAD_JOKES: string[] = [
   'Why was the coffee maker so calm? It knew how to filter out the noise.',
@@ -290,8 +304,8 @@ export const NORA_GROAN = 'Bah!';
 export const DOG_GROAN = 'Hrrmf.';
 
 export const NICK_LINES = {
-  handsBusy: 'Free hand’s busy.',
-  handsFullPhone: 'Can’t, I’m on with your mom.',
+  handsBusy: 'Hands full.',
+  handsFullPhone: 'Can’t, I’m on with Grandma and Grandpa.',
   nothingHere: 'Hm. Never mind.',
   thermostatOk: '72. Perfect. Nobody touch it.',
   grillIdle: 'Grill’s cold. Patience.',
@@ -305,13 +319,14 @@ export const NICK_LINES = {
   bisNone: 'Nobody asked for screens. Yet.',
 };
 
+// What Nick's wife says when she gets home to a lost day. Ribbing, not blame: tomorrow they tag-team.
 export const END_LINES: Record<string, string[]> = {
-  smoke: ['Babe. Why is the fire department here?', 'I could smell the grill from the car.'],
-  thermostat: ['Why is it 61 degrees in here?', 'Who touched the thermostat.'],
-  facetime: ['My mom says you kept saying “uh-huh” to nothing.'],
-  nap: ['Did she nap? She did not nap.'],
-  cry: ['Why is everyone crying. Why are YOU crying.', 'Okay. Everybody breathe.'],
-  default: ['So… how’d it go?', 'I leave for ONE day.', 'Why is the dog wearing a shoe?'],
+  smoke: ['Why are there firefighters in our driveway?', 'I could smell the grill from the car.'],
+  thermostat: ['Why is it 61 degrees in here?', 'Who touched the thermostat?'],
+  facetime: ['Your mom says you kept saying “uh-huh” to nothing.'],
+  nap: ['Did she nap? She did not nap. Okay. Tomorrow.'],
+  cry: ['Why is everyone crying. Why are YOU crying.', 'Okay. Group hug. Everybody breathe.'],
+  default: ['Rough one? I’ve had those. Tomorrow we tag-team.', 'Why is the dog wearing a shoe?'],
 };
 
 export const ITEM_NAMES = {

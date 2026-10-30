@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAOS, CLOCK, FACETIME, KAYLA_CALL_REPLIES, MOVE, PATIENCE, UPPY } from '../src/config';
+import { CHAOS, CLOCK, FACETIME, BACKUP_CALLS, MOVE, PATIENCE, UPPY } from '../src/config';
 import { ROOM_IDS, ROOM_RECTS, STATIONS, STATION_IDS, WALLS, blocked, dist, hops, roomPath, type StationId } from '../src/sim/house';
 import { Sim, clockString, type Request } from '../src/sim/sim';
 
@@ -333,15 +333,18 @@ describe('systems', () => {
     expect(r.left).toBeLessThan(8);
   });
 
-  it('Call Kayla: 2 charges, replies get shorter', () => {
+  it('Call for Backup: 2 charges, parents first, then his wife', () => {
     const sim = quiet();
     const a = inject(sim, { kind: 'diaper', owner: 'nora', room: 'living' });
     const b = inject(sim, { kind: 'snack', owner: 'evelyn', room: 'living' });
     const c = inject(sim, { kind: 'snack', owner: 'tyler', room: 'living' });
-    expect(sim.callKayla(a.id)).toBe(KAYLA_CALL_REPLIES[0]);
-    expect(sim.callKayla(b.id)).toBe(KAYLA_CALL_REPLIES[1]);
-    expect(sim.callKayla(c.id)).toBe(null);
-    expect(KAYLA_CALL_REPLIES[1].length).toBeLessThan(KAYLA_CALL_REPLIES[0].length);
+    expect(sim.callBackup(a.id)).toBe(BACKUP_CALLS[0].body);
+    expect(sim.callBackup(b.id)).toBe(BACKUP_CALLS[1].body);
+    expect(sim.callBackup(c.id)).toBe(null);
+    expect(sim.requests.some((r) => r.id === a.id || r.id === b.id)).toBe(false);
+    const from = sim.drainEvents().filter((e) => e.type === 'text').map((e) => (e as { from: string }).from);
+    expect(from).toContain(BACKUP_CALLS[0].from);
+    expect(from).toContain(BACKUP_CALLS[1].from);
   });
 
   it('Because I Said So clears every screen_time at once', () => {

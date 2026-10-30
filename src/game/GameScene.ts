@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { ABILITIES, COFFEE, KAYLA_OUT_OF_CHARGES } from '../config';
+import { ABILITIES, BACKUP_OUT, COFFEE } from '../config';
 import { COUCH_POS, DOORS, ROOM_RECTS, STATIONS, STATION_IDS, WORLD as W_SIM, type RoomId, type StationId } from '../sim/house';
 import { REQUEST_LABEL, Sim, clockString, type ActorId, type Request, type SimEvent } from '../sim/sim';
 import type { World3D } from '../three/World3D';
 import { drawIcon, drawMomFace } from './art';
-import { BAR, COLORS, DPAD, FONT, H, HUD, PANEL, W, WORLD, inWorld } from './layout';
+import { ABIL, ABILITY_R, COLORS, FONT, H, HUD, PANEL, PAUSE, STICK, W, WORLD, inWorld } from './layout';
 import { ActionPanel } from './panel';
 
 export interface SceneHooks {
@@ -51,7 +51,7 @@ export class GameScene extends Phaser.Scene {
   timeScale = 1; // tests only
 
   private dyn!: Phaser.GameObjects.Graphics; // highlights, rings, finger marker
-  private top!: Phaser.GameObjects.Graphics; // HUD + bar
+  private top!: Phaser.GameObjects.Graphics; // HUD + ability buttons
   private fxTop!: Phaser.GameObjects.Graphics; // freeze tint, alarm flash
   world?: World3D; // the 3D house + camera (set by main.ts)
   private speech = new Map<ActorId, Phaser.GameObjects.Text>();
@@ -60,8 +60,8 @@ export class GameScene extends Phaser.Scene {
   private panel!: ActionPanel;
   private clockText!: Phaser.GameObjects.Text;
   private chaosText!: Phaser.GameObjects.Text;
-  private barTexts: Phaser.GameObjects.Text[] = [];
-  private barSub: Phaser.GameObjects.Text[] = [];
+  private abilIcons: Phaser.GameObjects.Graphics[] = [];
+  private abilLabels: Phaser.GameObjects.Text[] = [];
   private toastText!: Phaser.GameObjects.Text;
   private toastT = 0;
   private textBanner!: Phaser.GameObjects.Container;
@@ -81,14 +81,12 @@ export class GameScene extends Phaser.Scene {
   private alarmT = 0;
   private alarmText!: Phaser.GameObjects.Text;
   private weekText!: Phaser.GameObjects.Text;
-  private handIcon!: Phaser.GameObjects.Graphics;
-  private handLabel!: Phaser.GameObjects.Text;
-  private handKey = '';
   private now = 0;
   private lastNow = 0;
-  private roles = new Map<number, 'dpad' | 'panel'>();
-  private dpadDir: Pt | null = null;
-  private dpadG!: Phaser.GameObjects.Graphics;
+  private roles = new Map<number, 'stick' | 'panel'>();
+  private stickDir: Pt | null = null;
+  private stickKnob: Pt = { x: 0, y: 0 }; // knob offset from the stick's center
+  private stickG!: Phaser.GameObjects.Graphics;
   private keysDown = new Set<string>();
 
   constructor() {
@@ -128,16 +126,16 @@ export class GameScene extends Phaser.Scene {
 
     this.top = this.add.graphics().setDepth(60);
     this.buildHud();
-    this.buildBar();
+    this.buildAbilities();
     this.panel = new ActionPanel(this, () => this.sim, this.txt);
     this.panel.onCancelSelect = () => (this.panel.selectMode = false);
     this.events.on('panel-sfx', (n: string) => this.hooks?.sfx(n));
 
     this.fxTop = this.add.graphics().setDepth(65);
-    this.dpadG = this.add.graphics().setDepth(55);
+    this.stickG = this.add.graphics().setDepth(55);
     this.buildOverlays();
 
-    // Two thumbs: one on the D-pad, one on the action pad. Each pointer keeps the role it started with.
+    // Two thumbs: one on the joystick, one on the action card. Each pointer keeps the role it started with.
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       const w = cam.getWorldPoint(p.x, p.y);
       this.onDown(p.id, w.x, w.y);
@@ -146,7 +144,7 @@ export class GameScene extends Phaser.Scene {
       if (!p.isDown) return;
       const w = cam.getWorldPoint(p.x, p.y);
       const role = this.roles.get(p.id);
-      if (role === 'dpad') this.dpadTo(w.x, w.y);
+      if (role === 'stick') this.stickTo(w.x, w.y);
       else if (role === 'panel') this.panel.pointerMove(w.x, w.y);
     });
     const up = (p: Phaser.Input.Pointer) => {
@@ -171,7 +169,8 @@ export class GameScene extends Phaser.Scene {
     this.running = true;
     this.panel.selectMode = false;
     this.roles.clear();
-    this.dpadDir = null;
+    this.stickDir = null;
+    this.stickKnob = { x: 0, y: 0 };
     this.keysDown.clear();
     this.weekText.setText(`WEEK ${week} · GAME NIGHT 5:00`);
     this.textQueue = [];
@@ -189,7 +188,8 @@ export class GameScene extends Phaser.Scene {
   // Called when the game pauses: let go of everything held.
   releaseInput() {
     this.roles.clear();
-    this.dpadDir = null;
+    this.stickDir = null;
+    this.stickKnob = { x: 0, y: 0 };
     this.keysDown.clear();
     this.sim?.setMoveTarget(null);
     this.sim?.setMoveDir(null);
@@ -221,51 +221,47 @@ export class GameScene extends Phaser.Scene {
   private onDown(id: number, x: number, y: number) {
     if (!this.running) return;
     const sim = this.sim;
-    if (y >= BAR.y) return this.onBar(x);
-    if (sim.facetime.prompt && Math.abs(x - this.uhHuh.x) <= 110 && Math.abs(y - this.uhHuh.y) <= 32) {
+    if (Math.hypot(x - PAUSE.x, y - PAUSE.y) <= PAUSE.r + 8) return this.hooks.pause();
+    const ai = ABIL.findIndex((a) => Math.hypot(x - a.x, y - a.y) <= ABILITY_R + 8);
+    if (ai >= 0) return this.useAbility(ai);
+    if (sim.facetime.prompt && Math.abs(x - this.uhHuh.x) <= 92 && Math.abs(y - this.uhHuh.y) <= 32) {
       sim.answerUhHuh();
       return;
     }
-    if (Math.hypot(x - DPAD.cx, y - DPAD.cy) <= DPAD.r + 10) {
-      this.roles.set(id, 'dpad');
-      this.dpadTo(x, y);
-      return;
-    }
+    // The card (when one is showing) wins over the joystick's generous touch zone where they meet.
     if (this.panel.contains(x, y)) {
       this.roles.set(id, 'panel');
       return this.panel.pointerDown(x, y);
     }
+    if (Math.hypot(x - STICK.cx, y - STICK.cy) <= STICK.r + 24) {
+      this.roles.set(id, 'stick');
+      this.stickTo(x, y);
+      return;
+    }
     if (inWorld(x, y) && this.panel.selectMode) {
       const b = this.nearestBubble(x, y, 32);
       if (b != null) {
-        sim.callKayla(b);
+        sim.callBackup(b);
         this.panel.selectMode = false;
       }
     }
   }
 
-  // D-pad: 4 arrows; a thumb between two arrows walks diagonally. Small dead zone in the middle.
-  private dpadTo(x: number, y: number) {
-    const dx = x - DPAD.cx;
-    const dy = y - DPAD.cy;
-    let dir: Pt | null = null;
-    if (Math.hypot(dx, dy) >= 10) {
-      const ax = Math.abs(dx);
-      const ay = Math.abs(dy);
-      if (ax > ay * 2.2) dir = { x: Math.sign(dx), y: 0 };
-      else if (ay > ax * 2.2) dir = { x: 0, y: Math.sign(dy) };
-      else dir = { x: Math.sign(dx), y: Math.sign(dy) };
-    }
-    const changed = (dir?.x ?? 0) !== (this.dpadDir?.x ?? 0) || (dir?.y ?? 0) !== (this.dpadDir?.y ?? 0);
-    this.dpadDir = dir;
-    if (changed) {
-      this.applyMove();
-      if (dir) this.hooks?.haptic(6);
-    }
+  // Virtual joystick: Nick walks the way the knob points (any angle). Small dead zone in the middle.
+  private stickTo(x: number, y: number) {
+    const dx = x - STICK.cx;
+    const dy = y - STICK.cy;
+    const d = Math.hypot(dx, dy);
+    const k = d > STICK.r ? STICK.r / d : 1;
+    this.stickKnob = { x: dx * k, y: dy * k };
+    const dir = d >= 12 ? { x: dx / d, y: dy / d } : null;
+    if (dir && !this.stickDir) this.hooks?.haptic(6);
+    this.stickDir = dir;
+    this.applyMove();
   }
 
   private applyMove() {
-    if (this.dpadDir) return this.sim.setMoveDir(this.dpadDir);
+    if (this.stickDir) return this.sim.setMoveDir(this.stickDir);
     let dx = 0;
     let dy = 0;
     for (const k of this.keysDown) {
@@ -278,16 +274,11 @@ export class GameScene extends Phaser.Scene {
   private onUp(id: number, x: number, y: number) {
     const role = this.roles.get(id);
     this.roles.delete(id);
-    if (role === 'dpad') {
-      this.dpadDir = null;
+    if (role === 'stick') {
+      this.stickDir = null;
+      this.stickKnob = { x: 0, y: 0 };
       this.applyMove();
     } else if (role === 'panel') this.panel.pointerUp(x, y);
-  }
-
-  private onBar(x: number) {
-    const i = this.barIndex(x);
-    if (i === 3) return this.hooks.pause();
-    this.useAbility(i);
   }
 
   useAbility(i: number) {
@@ -295,7 +286,7 @@ export class GameScene extends Phaser.Scene {
     if (!this.running) return;
     if (i === 0) sim.dadJoke();
     else if (i === 1) {
-      if (sim.kaylaCharges <= 0) return this.toast(KAYLA_OUT_OF_CHARGES);
+      if (sim.backupCharges <= 0) return this.toast(BACKUP_OUT);
       if (!sim.requests.length) return this.toast('Nothing to hand off. Yet.');
       this.panel.selectMode = !this.panel.selectMode;
       this.hooks.sfx('tap');
@@ -421,40 +412,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildHud() {
-    this.clockText = this.txt(12, 6, '9:00 AM', 28, '#ffffff', { fontStyle: 'bold' }).setDepth(61);
-    this.weekText = this.txt(14, 42, 'WEEK 1 · GAME NIGHT 5:00', 9, '#ffd166', { fontStyle: 'bold' }).setDepth(61);
-    this.txt(176, 4, 'CHAOS', 9, '#9a9cc0', { fontStyle: 'bold' }).setDepth(61);
+    this.clockText = this.txt(12, 4, '9:00 AM', 28, '#ffffff', { fontStyle: 'bold' }).setDepth(61);
+    this.weekText = this.txt(14, 40, 'WEEK 1 · GAME NIGHT 5:00', 9, '#ffd166', { fontStyle: 'bold' }).setDepth(61);
+    this.txt(176, 4, 'CHAOS', 9, '#c9cbe6', { fontStyle: 'bold' }).setDepth(61);
     this.chaosText = this.txt(0, 4, '0', 9, '#ffffff', { fontStyle: 'bold' }).setOrigin(1, 0).setDepth(61);
-    this.txt(176, 38, 'COFFEE', 9, '#9a9cc0', { fontStyle: 'bold' }).setDepth(61);
-    this.handIcon = this.add.graphics().setDepth(61);
-    this.handLabel = this.txt(0, 56, '', 10, '#ffffff').setOrigin(0, 0.5).setDepth(61);
+    this.txt(176, 36, 'COFFEE', 9, '#c9cbe6', { fontStyle: 'bold' }).setDepth(61);
   }
 
-  private buildBar() {
-    const labels = ['Dad Joke', 'Call Kayla', 'Because I\nSaid So', ''];
-    for (let i = 0; i < 4; i++) {
-      this.barTexts.push(this.txt(0, 0, labels[i], 13, '#ffffff', { fontStyle: 'bold', align: 'center' }).setOrigin(0.5).setDepth(62));
-      if (i < 3) this.barSub.push(this.txt(0, 0, '', 10, '#c9c9d6').setOrigin(0.5).setDepth(62));
+  // Round ability buttons stacked above the joystick, each with a caption (keys 1-3 on a keyboard).
+  private buildAbilities() {
+    const icons = ['joke', 'backup', 'bis'];
+    for (let i = 0; i < 3; i++) {
+      const g = this.add.graphics().setDepth(62);
+      drawIcon(g, icons[i], 22);
+      this.abilIcons.push(g);
+      this.abilLabels.push(
+        this.txt(0, 0, '', 9, '#ffffff', { fontStyle: 'bold', align: 'center', stroke: '#22223b', strokeThickness: 3 }).setOrigin(1, 0.5).setDepth(62),
+      );
     }
   }
 
-  // Three equal ability buttons and a pause button, 8px gaps, spanning the full width.
-  // Right edge of the HUD meters: the screen edge on a phone, capped on wide screens.
+  // Right edge of the HUD meters: just left of the pause button on a phone, capped on wide screens.
   private hudRight() {
-    return 176 + Math.min(W - 188, 420);
-  }
-
-  private barRect(i: number) {
-    const bw = (W - 5 * 8 - 50) / 3;
-    const ws = [bw, bw, bw, 50];
-    let x = 8;
-    for (let k = 0; k < i; k++) x += ws[k] + 8;
-    return { x, y: BAR.y + 6, w: ws[i], h: 60 };
-  }
-
-  private barIndex(x: number) {
-    for (let i = 3; i >= 0; i--) if (x >= this.barRect(i).x - 4) return i;
-    return 0;
+    return 176 + Math.min(W - 176 - 54, 420);
   }
 
   private buildOverlays() {
@@ -492,17 +472,17 @@ export class GameScene extends Phaser.Scene {
     mg.fillStyle(0x22223b, 1).fillRoundedRect(-32, -28, 64, 56, 14);
     const face = this.add.graphics({ x: 0, y: -2 });
     drawMomFace(face, 17);
-    const ml = this.txt(0, 19, 'MIL', 9, '#ffffff', { fontStyle: 'bold' }).setOrigin(0.5);
+    const ml = this.txt(0, 19, 'MOM & DAD', 7, '#ffffff', { fontStyle: 'bold' }).setOrigin(0.5);
     this.momTime = this.txt(0, -19, '', 9, '#34c759', { fontStyle: 'bold' }).setOrigin(0.5);
     this.momWin = this.add.container(0, 0, [mg, face, ml, this.momTime]).setDepth(69).setVisible(false);
 
     const ub = this.add.graphics();
-    ub.fillStyle(0x000000, 0.3).fillRoundedRect(-104, -24, 208, 56, 28);
-    ub.fillStyle(0x34c759, 1).fillRoundedRect(-106, -28, 212, 56, 28);
+    ub.fillStyle(0x000000, 0.3).fillRoundedRect(-82, -24, 164, 56, 28);
+    ub.fillStyle(0x34c759, 1).fillRoundedRect(-84, -28, 168, 56, 28);
     const ut = this.txt(0, 0, '“uh-huh”', 22, '#ffffff', { fontStyle: 'bold' }).setOrigin(0.5);
     this.uhHuh = this.add.container(0, 0, [ub, ut]).setDepth(75).setVisible(false);
 
-    this.selectBanner = this.txt(0, 0, 'Kayla’s on it: tap a request', 14, '#ffffff', {
+    this.selectBanner = this.txt(0, 0, 'Call for Backup: tap a request', 14, '#ffffff', {
       backgroundColor: '#e76f51',
       padding: { x: 12, y: 6 },
       fontStyle: 'bold',
@@ -527,28 +507,25 @@ export class GameScene extends Phaser.Scene {
     if (!this.panel) return; // not created yet; create() lays out
     const cam = this.cameras.main;
     cam.setSize(W * this.R, H * this.R);
-    const hr = this.hudRight();
-    this.chaosText.setX(hr);
-    this.handIcon.setPosition(hr - 60, 56);
-    this.handLabel.setX(hr - 46);
-    for (let i = 0; i < 4; i++) {
-      const r = this.barRect(i);
-      this.barTexts[i].setPosition(r.x + r.w / 2, r.y + r.h / 2 - 6);
-      this.barSub[i]?.setPosition(r.x + r.w / 2, r.y + r.h - 12);
-    }
+    this.chaosText.setX(this.hudRight());
+    ABIL.forEach((a, i) => {
+      this.abilIcons[i].setPosition(a.x, a.y);
+      this.abilLabels[i].setPosition(a.x - ABILITY_R - 6, a.y);
+    });
     // Text banner: full width on a phone, capped and centered on wide screens.
     const bw = Math.min(W - 20, 520);
     this.textBg.clear();
     this.textBg.fillStyle(0x000000, 0.25).fillRoundedRect(10, 4, bw, 54, 14);
     this.textBg.fillStyle(0xf8f9fa, 0.97).fillRoundedRect(10, 0, bw, 54, 14);
     this.textBody.setWordWrapWidth(bw - 70);
-    this.textBanner.setX((W - bw) / 2 - 10);
+    this.textBanner.setX((W - bw) / 2 - 10).setY(HUD.h + 6);
     this.toastText.setX(W / 2).setY(PANEL.y - 12).setWordWrapWidth(Math.min(W - 60, 460));
-    this.jokeCard.setPosition(W / 2, WORLD.y + Math.min(250, WORLD.h / 2));
-    this.momWin.setPosition(44, PANEL.y - 36);
-    this.uhHuh.setPosition(W / 2 + 34, PANEL.y - 36);
-    this.selectBanner.setPosition(W / 2, WORLD.y + 8);
-    this.alarmText.setPosition(W / 2, WORLD.y + WORLD.h / 2);
+    this.jokeCard.setPosition(W / 2, (HUD.h + PANEL.y) / 2);
+    // FaceTime: Grandma's window and the "uh-huh" button sit just above the action card.
+    this.momWin.setPosition(PANEL.x + 36, PANEL.y - 40);
+    this.uhHuh.setPosition(PANEL.x + 160, PANEL.y - 40);
+    this.selectBanner.setPosition(W / 2, HUD.h + 8);
+    this.alarmText.setPosition(W / 2, (HUD.h + PANEL.y) / 2);
     this.panel.relayout();
   }
 
@@ -586,11 +563,7 @@ export class GameScene extends Phaser.Scene {
     const sim = this.sim;
     const g = this.dyn;
     g.clear();
-    // The canvas is transparent; paint the non-3D bands (the deck between the house and the bar).
-    g.fillStyle(COLORS.bg, 1).fillRect(0, WORLD.y + WORLD.h, W, BAR.y - WORLD.y - WORLD.h);
-    g.fillRect(0, HUD.h, W, WORLD.y - HUD.h);
-
-    this.renderDpad();
+    this.renderStick();
     if (sim.goalMin !== 480) this.weekText.setText(`WEEK ${sim.week} · GAME NIGHT ${clockString(sim.goalMin).replace(' PM', '')}`);
 
     this.renderChips(g);
@@ -613,31 +586,25 @@ export class GameScene extends Phaser.Scene {
     this.renderOverlays(dt);
   }
 
-  private renderDpad() {
-    const g = this.dpadG;
+  // The joystick: a translucent base and a knob that follows the thumb.
+  private renderStick() {
+    const g = this.stickG;
     g.clear();
-    const { cx, cy, r } = DPAD;
-    g.fillStyle(0x2b2d42, 0.95).fillCircle(cx, cy, r);
-    g.lineStyle(2, 0x4a4e69, 1).strokeCircle(cx, cy, r);
-    const d = this.dpadDir;
-    const arms: [number, number][] = [
-      [0, -1],
-      [0, 1],
-      [-1, 0],
-      [1, 0],
-    ];
-    for (const [ax, ay] of arms) {
-      const on = !!d && (d.x === ax && ax !== 0 ? true : d.y === ay && ay !== 0);
-      const bx = cx + ax * 44;
-      const by = cy + ay * 44;
-      g.fillStyle(on ? COLORS.accent : 0x4a4e69, 1).fillRoundedRect(bx - 23, by - 23, 46, 46, 12);
-      g.fillStyle(0xffffff, on ? 1 : 0.85);
-      const s = 11;
-      const px = -ay;
-      const py = ax;
-      g.fillTriangle(bx + ax * s, by + ay * s, bx - ax * s * 0.6 + px * s, by - ay * s * 0.6 + py * s, bx - ax * s * 0.6 - px * s, by - ay * s * 0.6 - py * s);
+    const { cx, cy, r } = STICK;
+    const on = !!this.stickDir;
+    g.fillStyle(0x22223b, on ? 0.45 : 0.32).fillCircle(cx, cy, r);
+    g.lineStyle(2, 0xffffff, on ? 0.55 : 0.35).strokeCircle(cx, cy, r);
+    // Faint arrow ticks so it reads as a control before you touch it.
+    g.fillStyle(0xffffff, 0.35);
+    for (const [ax, ay] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      const bx = cx + ax * (r - 12);
+      const by = cy + ay * (r - 12);
+      g.fillTriangle(bx + ax * 6, by + ay * 6, bx - ay * 6, by + ax * 6, bx + ay * 6, by - ax * 6);
     }
-    g.fillStyle(0x3d405b, 1).fillCircle(cx, cy, 14);
+    const kx = cx + this.stickKnob.x;
+    const ky = cy + this.stickKnob.y;
+    g.fillStyle(0x000000, 0.2).fillCircle(kx, ky + 3, 26);
+    g.fillStyle(on ? COLORS.accent : 0xf8f9fa, on ? 0.95 : 0.85).fillCircle(kx, ky, 26);
   }
 
   private onView(p: Pt & { behind?: boolean }, pad = 0) {
@@ -680,7 +647,7 @@ export class GameScene extends Phaser.Scene {
     const sim = this.sim;
     const sc = 0.2;
     const ox = WORLD.x + WORLD.w - W_SIM.w * sc - 8;
-    const oy = WORLD.y + 8;
+    const oy = HUD.h + 8;
     const M = (x: number, y: number) => ({ x: ox + x * sc, y: oy + y * sc });
     g.fillStyle(0x1d1f2b, 0.75).fillRoundedRect(ox - 3, oy - 3, W_SIM.w * sc + 6, W_SIM.h * sc + 6, 6);
     const col: Record<RoomId, number> = { backyard: 0x76bd79, kitchen: 0xe8e6dc, living: 0xc68b59, garage: 0xa3abb5 };
@@ -743,7 +710,7 @@ export class GameScene extends Phaser.Scene {
       const off = !this.onView(target as Pt & { behind?: boolean }, pad);
       const edge = {
         x: Phaser.Math.Clamp(target.x, WORLD.x + pad, WORLD.x + WORLD.w - pad),
-        y: Phaser.Math.Clamp(target.y, WORLD.y + pad, WORLD.y + WORLD.h - pad - 22), // room for the label above the deck
+        y: Phaser.Math.Clamp(target.y, HUD.h + pad, Math.min(PANEL.y, STICK.cy - STICK.r) - pad - 22), // stay clear of the controls
       };
       b.pos = approach(b.pos, edge, 900, dt);
       b.c.setPosition(b.pos.x, b.pos.y);
@@ -794,44 +761,46 @@ export class GameScene extends Phaser.Scene {
     const sim = this.sim;
     const g = this.top;
     g.clear();
-    g.fillStyle(COLORS.hud, 1).fillRect(0, HUD.y, W, HUD.h);
+    // A slim translucent strip: the house shows through.
+    g.fillStyle(COLORS.hud, 0.78).fillRect(0, HUD.y, W, HUD.h);
     this.clockText.setText(sim.clock);
     const cx = 176;
     const cw = this.hudRight() - cx;
     const ch = sim.chaos / 100;
-    g.fillStyle(0x1d1f2b, 1).fillRoundedRect(cx, 16, cw, 18, 9);
+    g.fillStyle(0x1d1f2b, 0.9).fillRoundedRect(cx, 16, cw, 16, 8);
     const col = ch < 0.5 ? COLORS.chaosLo : ch < 0.8 ? COLORS.chaosMid : COLORS.chaosHi;
-    g.fillStyle(col, 1).fillRoundedRect(cx + 2, 18, Math.max(8, (cw - 4) * ch), 14, 7);
-    if (ch >= 0.8) g.lineStyle(2, COLORS.chaosHi, 0.5 + 0.5 * Math.sin(this.now * 10)).strokeRoundedRect(cx, 16, cw, 18, 9);
+    g.fillStyle(col, 1).fillRoundedRect(cx + 2, 18, Math.max(8, (cw - 4) * ch), 12, 6);
+    if (ch >= 0.8) g.lineStyle(2, COLORS.chaosHi, 0.5 + 0.5 * Math.sin(this.now * 10)).strokeRoundedRect(cx, 16, cw, 16, 8);
     this.chaosText.setText(`${Math.floor(sim.chaos)}`);
     const cf = sim.nick.coffee;
-    const fw = 124;
-    g.fillStyle(0x1d1f2b, 1).fillRoundedRect(cx, 50, fw, 12, 6);
-    g.fillStyle(cf < COFFEE.slowBelow ? COLORS.bad : COLORS.coffee, 1).fillRoundedRect(cx + 2, 52, Math.max(6, (fw - 4) * cf), 8, 4);
-    g.lineStyle(1, 0xffffff, 0.3).lineBetween(cx + fw * COFFEE.slowBelow, 50, cx + fw * COFFEE.slowBelow, 62);
-    g.fillStyle(0x3d405b, 1).fillRoundedRect(cx + cw - 72, 44, 74, 24, 8);
-    const h = sim.nick.hand;
-    if (this.handKey !== `${h}`) {
-      this.handKey = `${h}`;
-      this.handIcon.clear();
-      if (h) drawIcon(this.handIcon, h === 'nora' ? 'nora' : h === 'phone' ? 'phone' : h, 15);
-      this.handLabel.setText(h ? (h === 'nora' ? 'Nora' : h === 'phone' ? 'Phone' : h === 'juice_box' ? 'Juice' : h === 'sippy_cup' ? 'Sippy' : h === 'bandaid' ? 'Band-aid' : 'Snack') : 'Empty');
-    }
+    const fw = Math.min(cw, 160);
+    g.fillStyle(0x1d1f2b, 0.9).fillRoundedRect(cx, 48, fw, 10, 5);
+    g.fillStyle(cf < COFFEE.slowBelow ? COLORS.bad : COLORS.coffee, 1).fillRoundedRect(cx + 2, 50, Math.max(6, (fw - 4) * cf), 6, 3);
+    g.lineStyle(1, 0xffffff, 0.3).lineBetween(cx + fw * COFFEE.slowBelow, 48, cx + fw * COFFEE.slowBelow, 58);
 
-    g.fillStyle(COLORS.hud, 1).fillRect(0, BAR.y, W, H - BAR.y);
-    const cds = [sim.jokeCd / ABILITIES.dadJoke.cooldownSec, sim.kaylaCharges > 0 ? 0 : 1, sim.bissCd / ABILITIES.becauseISaidSo.cooldownSec, 0];
-    for (let i = 0; i < 4; i++) {
-      const r = this.barRect(i);
+    // Pause.
+    g.fillStyle(0x3d405b, 0.95).fillCircle(PAUSE.x, PAUSE.y, PAUSE.r);
+    g.fillStyle(0xffffff, 1).fillRoundedRect(PAUSE.x - 6, PAUSE.y - 7, 4, 14, 1).fillRoundedRect(PAUSE.x + 2, PAUSE.y - 7, 4, 14, 1);
+
+    // Abilities: cooldowns sweep around the button; Call for Backup shows its charges.
+    const cds = [sim.jokeCd / ABILITIES.dadJoke.cooldownSec, sim.backupCharges > 0 ? 0 : 1, sim.bissCd / ABILITIES.becauseISaidSo.cooldownSec];
+    const names = ['Dad Joke', 'Backup', 'Because\nI Said So'];
+    ABIL.forEach((a, i) => {
       const lit = i === 1 && this.panel.selectMode;
-      g.fillStyle(lit ? 0xe76f51 : COLORS.ability, 1).fillRoundedRect(r.x, r.y, r.w, r.h, 14);
-      if (cds[i] > 0) g.fillStyle(0x000000, 0.45).fillRoundedRect(r.x, r.y, r.w * cds[i], r.h, 14);
-      this.barTexts[i].setAlpha(cds[i] > 0 ? 0.5 : 1);
-    }
-    const pr = this.barRect(3);
-    g.fillStyle(0xffffff, 1).fillRoundedRect(pr.x + pr.w / 2 - 9, pr.y + 20, 6, 20, 2).fillRoundedRect(pr.x + pr.w / 2 + 3, pr.y + 20, 6, 20, 2);
-    this.barSub[0].setText(sim.jokeCd > 0 ? `${Math.ceil(sim.jokeCd)}s` : 'key 1');
-    this.barSub[1].setText(`${'●'.repeat(sim.kaylaCharges)}${'○'.repeat(ABILITIES.callKayla.charges - sim.kaylaCharges)}  key 2`);
-    this.barSub[2].setText(sim.bissCd > 0 ? `${Math.ceil(sim.bissCd)}s` : 'key 3');
+      const ready = cds[i] <= 0;
+      g.fillStyle(0x000000, 0.25).fillCircle(a.x, a.y + 3, ABILITY_R);
+      g.fillStyle(lit ? 0xe76f51 : ready ? 0xfffaf0 : 0x8d8fa8, ready || lit ? 0.95 : 0.7).fillCircle(a.x, a.y, ABILITY_R);
+      g.lineStyle(3, lit ? 0xffffff : ready ? COLORS.accent : 0x5a5f8a, 1).strokeCircle(a.x, a.y, ABILITY_R);
+      if (!ready && i !== 1) {
+        g.lineStyle(4, 0x22223b, 0.8);
+        g.beginPath();
+        g.arc(a.x, a.y, ABILITY_R - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * cds[i], false);
+        g.strokePath();
+      }
+      this.abilIcons[i].setAlpha(ready || lit ? 1 : 0.45);
+      const sub = i === 0 ? (sim.jokeCd > 0 ? ` ${Math.ceil(sim.jokeCd)}s` : '') : i === 1 ? ` ${'●'.repeat(sim.backupCharges)}${'○'.repeat(ABILITIES.callBackup.charges - sim.backupCharges)}` : sim.bissCd > 0 ? ` ${Math.ceil(sim.bissCd)}s` : '';
+      this.abilLabels[i].setText(names[i] + sub);
+    });
   }
 
   private renderOverlays(dt: number) {
@@ -873,7 +842,7 @@ export class GameScene extends Phaser.Scene {
     this.uhHuh.setVisible(!!pr && this.running);
     if (pr) {
       this.uhHuh.setScale(1 + Math.sin(this.now * 12) * 0.03);
-      g.fillStyle(0xffffff, 0.9).fillRoundedRect(this.uhHuh.x - 80, this.uhHuh.y + 20, 160 * Math.max(0, pr.left / 2.6), 5, 2);
+      g.fillStyle(0xffffff, 0.9).fillRoundedRect(this.uhHuh.x - 66, this.uhHuh.y + 20, 132 * Math.max(0, pr.left / 2.6), 5, 2);
     }
     this.selectBanner.setVisible(this.panel.selectMode && this.running);
   }

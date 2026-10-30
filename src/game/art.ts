@@ -221,7 +221,7 @@ export function drawActor(g: G, id: string) {
   else drawEloise(g);
 }
 
-// Kayla's mom in the FaceTime window.
+// Grandma (Nick's mom) in the FaceTime window.
 export function drawMomFace(g: G, r: number) {
   g.fillStyle(0x8fb8de, 1);
   g.fillRoundedRect(-r, -r * 1.3, r * 2, r * 2.6, 10);
@@ -432,7 +432,7 @@ export function drawIcon(g: G, key: string, s = 28) {
       g.arc(0, R(1), R(6), 0.2, Math.PI - 0.2, false);
       g.strokePath();
       break;
-    case 'kayla':
+    case 'backup': // Call for Backup: a phone with a heart
       g.fillStyle(0xe76f51, 1);
       g.fillRoundedRect(R(-8), R(-12), R(16), R(24), R(4));
       g.fillStyle(0xffffff, 1);

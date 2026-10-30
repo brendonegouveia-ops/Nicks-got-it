@@ -53,7 +53,7 @@ export function runBot(seed: number, opts: BotOpts, maxT = 900, week = 1): Sim {
       if (urgent.length >= 2 && sim.jokeCd <= 0) sim.dadJoke();
       if (sim.requests.some((r) => r.kind === 'screen_time') && sim.bissCd <= 0) sim.becauseISaidSo();
       const dire = sim.requests.find((r) => isFinite(r.left) && r.left < 1.2 && r.kind !== 'flip');
-      if (dire && sim.chaos > 60 && sim.kaylaCharges > 0) sim.callKayla(dire.id);
+      if (dire && sim.chaos > 60 && sim.backupCharges > 0) sim.callBackup(dire.id);
     }
 
     const it = sim.interaction;

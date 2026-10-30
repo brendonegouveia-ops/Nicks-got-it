@@ -1,16 +1,16 @@
 # NICK'S GOT IT
 
-Kayla’s out until 5. Game night at Carlson’s is at 5. Nick said “I got it.”
+His wife’s at work, then running errands for the house. She’s home at 5. Game night at Carlson’s is at 5. Nick said “I got it.”
 
-A mobile-first browser survival game in 3D. A third-person camera follows Nick through the house and backyard; walk him with an on-screen D-pad and handle every job with a big thumb gesture on the action pad. **Make it to 5:00 PM and Nick goes to game night**; that unlocks the next week, a harder version of the same Thursday. If **Chaos** hits 100 first, game night's off and you retry the week. Desktop works with a keyboard or mouse.
+A mobile-first browser survival game in 3D. A third-person camera follows Nick through the house and backyard; walk him with a virtual joystick and handle every job with a tap bubble or a big thumb gesture on a card that floats over the game. **Make it to 5:00 PM and Nick goes to game night**; that unlocks the next week, a harder version of the same Thursday. If **Chaos** hits 100 first, game night's off and you retry the week. Desktop works with a keyboard or mouse.
 
 The clock runs 1.5 game minutes per real second, so a week is about 5 minutes 20 seconds (9:00 AM to 5:00 PM). Every other timer (request patience, cooldowns, FaceTime, cries) is in real seconds.
 
-Stack: Three.js 0.158 (the 3D house, characters and camera) under a transparent Phaser 3.90 layer (HUD, bubbles, D-pad, action pad), TypeScript, Vite. Cloudflare Pages hosts the static build, and Pages Functions + D1 run the leaderboard. All art and sound are generated in code (low-poly primitives, canvas textures, WebAudio synthesis), with no model, image or audio files.
+Stack: Three.js 0.158 (the 3D house, characters and camera) under a transparent Phaser 3.90 layer (HUD, bubbles, joystick, action card), TypeScript, Vite. Cloudflare Pages hosts the static build, and Pages Functions + D1 run the leaderboard. All art and sound are generated in code (low-poly primitives, canvas textures, WebAudio synthesis), with no model, image or audio files.
 
 **How the 3D works.** The simulation is still 2D: the floor plan in `src/sim/house.ts` (rooms, walls, doors, furniture, stations) is the ground plane, with sim (x, y) = 3D (x, z) and 1 unit = 1 design px (~40 per meter). `src/three/World3D.ts` builds the house from it and renders it on a canvas underneath Phaser's; the 2D layer places request bubbles, speech and station icon chips by projecting through the 3D camera.
 
-- **Camera.** Behind and above Nick with a fixed heading, so ▲ on the D-pad always walks away from the camera. It eases after him on wall-clock time.
+- **Camera.** Behind and above Nick with a fixed heading, so pushing the joystick up always walks away from the camera. It eases after him on wall-clock time.
 - **Walls.** Cutaway height (about chest high) so rooms read from above; any wall between the camera and Nick fades out.
 - **Off-screen requests.** Their bubbles pin to the edge of the 3D view with an arrow pointing toward them. A minimap (top right) shows rooms, doorways, Nick (orange), the kids and Eloise, and every request colored by its timer.
 - **Furniture is solid.** Counter, kitchen table, couch, coffee table, TV stand, playpen, workbench, grill, sandbox and the tree trunk block movement; the pathfinder routes around them. Stations on or beside furniture are within the 40 px station reach.
@@ -78,24 +78,26 @@ The anti-cheat is a plausibility floor, not real security. A score of N game min
 
 ## How it plays
 
-- **Walking.** The D-pad on the left of the bottom deck walks Nick (left thumb). Pressing between two arrows walks diagonally. Clipping a doorframe slides him around it (up to 18 px), so lining up with a doorway isn't fiddly. Desktop: WASD or the arrow keys, or click the D-pad.
-- **Doing jobs.** Walk up to a kid or a spill (within 46 px) or a station (within 34 px) and that job shows on the **action pad** on the right (right thumb), even while you're still walking. The current job stays up until Nick is 12 px past its reach, so shuffling around doesn't flicker it. When two things are in reach, a kid's request beats a station, then the nearest wins. With nothing doable in reach, the pad says why ("Evelyn wants a snack. Kitchen."). Two thumbs at once (D-pad + action pad) are supported.
+- **Screen.** The 3D view fills the whole screen; the controls float on top of it: a slim translucent HUD (clock, Chaos, coffee, pause), the minimap under it, a virtual joystick bottom-right with the three round ability buttons stacked above it, and the action card bottom-left beside the joystick (shown only when there's something to do or something in Nick's hands). The camera's field of view scales with the screen height, so taller screens show more house rather than a bigger Nick.
+- **Walking.** The joystick walks Nick at any angle (12 px dead zone), at full speed past the dead zone. Clipping a doorframe slides him around it (up to 18 px), so lining up with a doorway isn't fiddly. Desktop: WASD or the arrow keys, or drag the joystick.
+- **Doing jobs.** Walk up to a kid or a spill (within 46 px) or a station (within 34 px) and that job pops up next to the joystick, even while you're still walking: a plain tap job is a single bubble (tap it); hold, rub, swipe, mash and choices get a card. The current job stays up until Nick is 12 px past its reach, so shuffling around doesn't flicker it. When two things are in reach, a kid's request beats a station, then the nearest wins. With nothing doable in reach, a note above the card area says why ("Evelyn wants a snack. Kitchen."). Two thumbs at once (joystick + card) are supported; where the card and the joystick's touch zone meet, the card wins.
 - **Commitment.** Once your thumb starts a HOLD, RUB, SWIPE or MASH, Nick is locked in place until you let go (or the taps stop). Every other timer keeps running.
 - **Gestures.** TAP. HOLD: 1.5 s, or 2 s for watch_this. Letting go drains the ring instead of resetting it. RUB: about 1,200 design-px of back-and-forth drag (~1.2 s). SWIPE: one flick in the direction shown. MASH: 7 taps inside 2.2 s.
 - **The house.** The backyard (grill) runs along the top. Below it the kitchen (counter with coffee, snacks, juice, sippy cups; high chair; back door) and the living room (thermostat, playpen, couch) are one open-plan space. The garage (band-aids and four shoe hiding spots) is under the kitchen. Doorways (64–76 px, drawn as light thresholds with frames): kitchen ↔ backyard, living room ↔ backyard (slider), kitchen ↔ garage, garage ↔ living room. The minimap in the corner shows the whole plan, and requests off the 3D view pin to its edge with an arrow.
 - **Pathfinding.** Walkers use A* on an 8 px grid with a 2 px clearance margin, then head for the furthest point on the path they can see. A target on or inside a wall snaps to the nearest open spot.
 - **On my way.** Grabbing the item a kid asked for (snack, juice box, sippy cup, or a band-aid for a boo-boo) tops their timer up to 60% and slows it to 35% speed while Nick carries it; the bubble turns blue and a blue ring marks the kid.
 - **No dead items.** A crying kid takes whatever snack, drink or band-aid Nick holds: stand next to them and tap. The crying stops and Chaos drops by 3.
-- **Hands.** Nick has one free hand: one item, or Nora, or the FaceTime phone. The panel shows what's in it and has a **Put it down** button. The HUD shows it read-only.
-- **Abilities** (bottom bar, keys 1–3): Dad Joke freezes every request and system timer for 3 s, with a 25 s cooldown. It doesn't stop the clock, which is your score. Call Kayla has 2 charges: tap the ability, then a bubble. Her replies go “Sure babe! 💕” → “k”. Because I Said So clears every open screen_time and has a 40 s cooldown.
-- **Weeks.** Week N's Thursday is harder: patience starts at 110% in week 1 and drops 5% per week (floor 65%), requests come 12% faster per week, Chaos drains 8% slower per week, and fights break out 25% more often. From week 3, Kayla texts "running late 🙃" at 4:45 and game night slides to 5:30. Each week has a generic game night theme (board games, poker, trivia…). Progress (highest unlocked week) and your best run are saved on the device; the title screen has a week picker.
+- **Hands.** Nick carries one thing at a time (his coffee mug aside): one item, or Nora, or the FaceTime phone. A pill in the card area shows it, with a **Put down** button for items.
+- **Abilities** (round buttons above the joystick, keys 1–3): Dad Joke freezes every request and system timer for 3 s, with a 25 s cooldown. It doesn't stop the clock, which is your score. Call for Backup has 2 charges: tap it, then a request bubble, and that request is resolved. The first call reaches Nick's parents, the second his wife (on her lunch break); each texts back. Because I Said So clears every open screen_time and has a 40 s cooldown.
+- **Framing.** Nick and his wife are a team: she's at work, then running errands for the house, and texts help along the way (where the mac & cheese is, the crate latch trick). His parents check in by text, FaceTime at 3:00 PM to see the grandkids, and take the first Call for Backup. The end-card lines are ribbing, not blame.
+- **Weeks.** Week N's Thursday is harder: patience starts at 110% in week 1 and drops 5% per week (floor 65%), requests come 12% faster per week, Chaos drains 8% slower per week, and fights break out 25% more often. From week 3, his wife texts that the pharmacy line is long ("like 30 more min") at 4:45 and game night slides to 5:30. Each week has a generic game night theme (board games, poker, trivia…). Progress (highest unlocked week) and your best run are saved on the device; the title screen has a week picker.
 - **Desktop keys.** WASD (and arrows, except while a swipe or rub is up) walk. 1–3 abilities. Space/Enter tap, hold, mash, or pick the first choice. Arrows swipe or rub. Z/X pick choices. U says “uh-huh”. P/Esc pauses.
 
 ## Tuning
 
-Every number and every line of copy is in `src/config.ts` (walk speed and reach radii are under `MOVE`); the floor plan (rooms, walls, doors, station positions) is in `src/sim/house.ts`. `config.ts` holds: cast, patience, gesture sizes, chaos values, cry timing, request weights and gaps, dog, grill, thermostat, coffee, nap, FaceTime, abilities, timeline, the 25 dad jokes, Kayla's texts and the end-card lines. The sim (`src/sim/sim.ts`) is pure TypeScript with a seeded RNG, so you can tune it against `npm run balance`.
+Every number and every line of copy is in `src/config.ts` (walk speed and reach radii are under `MOVE`); the floor plan (rooms, walls, doors, station positions) is in `src/sim/house.ts`. `config.ts` holds: cast, patience, gesture sizes, chaos values, cry timing, request weights and gaps, dog, grill, thermostat, coffee, nap, FaceTime, abilities, timeline, the 25 dad jokes, the texts (his wife, his parents) and the end-card lines. The sim (`src/sim/sim.ts`) is pure TypeScript with a seeded RNG, so you can tune it against `npm run balance`.
 
-Balance as shipped (`npm run balance`): 12 seeds per row; bots walk the real floor plan with pathfinding and never misjudge a target, so humans on a D-pad will do worse.
+Balance as shipped (`npm run balance`): 12 seeds per row; bots walk the real floor plan with pathfinding and never misjudge a target, so humans on a joystick will do worse.
 
 | Week | Slow bot | Sharp bot | Perfect bot |
 |---|---|---|---|
@@ -108,8 +110,8 @@ An idle player loses around 11:40 AM. The fastest knobs are `WEEKS` (per-week st
 ## Interpretations and deviations from the brief
 
 - **3D, third person.** The brief asked for a portrait 2D cross-section; this version renders a 3D house with a follow camera. Rules, timers and gestures are unchanged.
-- **Full-screen layout.** The layout takes the screen's shape instead of letterboxing a fixed 390×844 frame (`fitLayout` in `src/game/layout.ts`). Phones keep a 390-wide design space and give any extra height to the 3D view; tablets and desktop windows get a wider design space (the action pad and HUD meters are capped, the ability bar stretches). It refits live on rotation, browser-bar changes and window resizes.
-- **Free movement replaces the tap-to-queue loop.** The original brief had a 4-item action queue with numbered markers, a route line, and 0.5 s room hops. That's gone: you walk Nick with a D-pad and jobs trigger by proximity. The brief's one-thumb rule is relaxed: the D-pad and action pad are meant for two thumbs (one at a time still works).
+- **Full-screen layout.** The layout takes the screen's shape instead of letterboxing a fixed 390×844 frame (`fitLayout` in `src/game/layout.ts`). Phones keep a 390-wide design space and give any extra height to the 3D view; tablets and desktop windows get a wider design space (the action card and HUD meters are capped). It refits live on rotation, browser-bar changes and window resizes.
+- **Free movement replaces the tap-to-queue loop.** The original brief had a 4-item action queue with numbered markers, a route line, and 0.5 s room hops. That's gone: you walk Nick with a joystick and jobs trigger by proximity. The brief's one-thumb rule is relaxed: the joystick and the action card are meant for two thumbs (one at a time still works).
 - **Weeks and a 5:00 PM goal replace the open-ended score.** The brief scored a run by the clock time when Chaos hit 100. Now you survive to 5:00 PM to win the week; the leaderboard ranks runs by week, then by the clock time reached. The 6:00 PM "running late" text became the week-3+ 4:45 PM delay. The clock runs 1.5× faster than the brief's 1 s = 1 min, so a week is ~5 minutes.
 
 - **Haptics.** The brief ends at “Haptics: navigator.vibrate”. Short pulses fire on gesture completion, cries, the smoke alarm, FaceTime and game over, with a toggle in Pause. iOS Safari has no Vibration API, so haptics do nothing on iPhone.
@@ -121,7 +123,7 @@ An idle player loses around 11:40 AM. The fastest knobs are `WEEKS` (per-week st
 - **Lost shoe.** Three of the four Garage spots light up, and the shoe turns up on the third check.
 - **Kids hold still while they want something.** Idle kids (and Eloise) wander from room to room through the doorways.
 - **watch_this** counts from anywhere in the kid's room, matching "stand in the kid's room".
-- **FaceTime.** At 3:00 PM the phone takes the free hand for 20 s. A held item goes into a pocket and comes back afterwards. A carried Nora is set down without a cry roll. Five “uh-huh” prompts appear 4 s apart, each with a 2.6 s window.
+- **FaceTime.** At 3:00 PM Nick's parents FaceTime to see the grandkids, and the phone takes his hand for 20 s. A held item goes into a pocket and comes back afterwards. A carried Nora is set down without a cry roll. Five “uh-huh” prompts appear 4 s apart, each with a 2.6 s window.
 - **Rotate overlay.** It only shows on touch devices in landscape (`pointer: coarse` and height ≤ 600 px). Desktop is never asked to rotate.
 - **Clock.** The game runs on wall-clock time, not Phaser's smoothed delta, so 1 s = 1 game minute even on slow frames. Frames are capped at 0.25 s, and the game auto-pauses on blur, tab hide and landscape.
 
@@ -133,8 +135,8 @@ src/sim/house.ts       floor plan: rooms, walls, doors, stations, collision, ste
 src/sim/sim.ts         pure simulation (movement, jobs, rules, timeline)
 src/three/World3D.ts   3D house, furniture, stations, lights, follow camera, wall fading, highlight rings, projection
 src/three/models.ts    low-poly Nick, Evelyn, Tyler, Nora, Eloise (walk cycles) + held items
-src/game/GameScene.ts  2D overlay: HUD, D-pad, ability bar, projected bubbles/speech/chips, edge arrows, minimap
-src/game/panel.ts      Action Panel gestures
+src/game/GameScene.ts  2D overlay: HUD, joystick, ability buttons, projected bubbles/speech/chips, edge arrows, minimap
+src/game/panel.ts      Action card: tap bubble, gesture card, holding pill
 src/game/art.ts        2D icons (bubbles, chips, panel) and the FaceTime face
 src/audio.ts           WebAudio SFX (groan, smoke alarm, cry, sizzle, bark, UI)
 src/main.ts            viewport/safe-area handling, overlays, pause, leaderboard UI

@@ -86,7 +86,7 @@ const doc = standalone
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#2b2d42" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="description" content="Kayla’s out until 5. Game night’s at 5. Nick said “I got it.” A one-thumb dad-survival game." />
+<meta name="description" content="His wife’s at work, then errands. Game night’s at 5. Nick said “I got it.” A one-thumb dad-survival game." />
 <meta property="og:title" content="Nick's Got It" />
 <meta property="og:description" content="Survive Thursday with the kids until 5:00 PM so Nick can make game night." />
 <title>Nick's Got It</title>

@@ -1,32 +1,34 @@
-// Screen geometry in design px. The layout fills the whole screen: a phone keeps a 390-wide design
-// space and the extra height goes to the 3D view; wider screens get a wider (and slightly taller)
-// design space. The HUD sits on top, the thumb deck and ability bar at the bottom, the 3D view between.
-// Every region is recomputed by setLayout(); importers read these live bindings / objects each frame.
+// Screen geometry in design px. The 3D view fills the whole screen and the controls float on top
+// of it: a slim HUD along the top, a virtual joystick bottom-right with the ability buttons above
+// it, and the action card (the job Nick is next to) bottom-left beside the joystick.
+// A phone keeps a 390-wide design space and any extra height goes to the view; wider screens get a
+// wider (and slightly taller) design space. Every region is recomputed by setLayout(); importers
+// read these live bindings / objects each frame.
 export const BASE_W = 390;
-const MIN_H = 600; // shortest design height (HUD + deck + a usable 3D view)
+const MIN_H = 600; // shortest design height
 const WIDE_H = 760; // design height on square-ish or landscape screens
 const MAX_ASPECT = 2; // wider than 2:1 letterboxes
 
 export let W = BASE_W;
 export let H = 844;
 
-export const HUD = { y: 0, h: 72 };
-export const WORLD = { x: 0, y: 74, w: BASE_W, h: 520 };
-// Thumb zone: D-pad on the left, action pad on the right, ability bar below.
-export const DECK = { y: 598, h: 168 };
-export const DPAD = { cx: 82, cy: 682, r: 74 };
-export const PANEL = { x: 166, y: 600, w: 218, h: 164 };
-export const BAR = { x: 0, y: 770, w: BASE_W, h: 74 };
+export const HUD = { y: 0, h: 64 };
+export const WORLD = { x: 0, y: 0, w: BASE_W, h: 844 }; // the 3D view: the whole screen
+export const STICK = { cx: 306, cy: 752, r: 58 };
+export const PANEL = { x: 8, y: 668, w: 224, h: 164 };
+export const ABILITY_R = 26;
+export const ABIL = [0, 1, 2].map(() => ({ x: 0, y: 0 })); // Dad Joke, Call for Backup, Because I Said So
+export const PAUSE = { x: 364, y: 32, r: 18 };
 
 export function setLayout(w: number, h: number) {
   W = w;
   H = h;
-  Object.assign(BAR, { y: H - 74, w: W });
-  Object.assign(DECK, { y: BAR.y - 172 });
-  Object.assign(DPAD, { cy: BAR.y - 88 });
-  const pw = Math.min(W - 172, 420);
-  Object.assign(PANEL, { x: W - 6 - pw, y: BAR.y - 170, w: pw });
-  Object.assign(WORLD, { w: W, h: DECK.y - 4 - WORLD.y });
+  Object.assign(WORLD, { w: W, h: H });
+  Object.assign(STICK, { cx: W - 84, cy: H - 92 });
+  const pw = Math.min(STICK.cx - STICK.r - 24, 300);
+  Object.assign(PANEL, { x: STICK.cx - STICK.r - 16 - pw, y: H - 12 - PANEL.h, w: pw });
+  ABIL.forEach((a, i) => Object.assign(a, { x: W - 36, y: STICK.cy - STICK.r - 46 - i * 64 }));
+  Object.assign(PAUSE, { x: W - 26, y: HUD.h / 2 });
 }
 
 // Design size for a viewport of vw x vh CSS px (same aspect, so the canvas fills it).
@@ -44,7 +46,7 @@ export const toWorld = (x: number, y: number) => ({
   x: Math.max(0, Math.min(WORLD.w, x - WORLD.x)),
   y: Math.max(0, Math.min(WORLD.h, y - WORLD.y)),
 });
-export const inWorld = (x: number, y: number) => y >= WORLD.y && y < WORLD.y + WORLD.h;
+export const inWorld = (x: number, y: number) => y >= HUD.h && y < WORLD.y + WORLD.h;
 
 export const COLORS = {
   bg: 0x1d1f2b,
