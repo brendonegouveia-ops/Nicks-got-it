@@ -112,7 +112,7 @@ export class GameScene extends Phaser.Scene {
 
     this.dyn = this.add.graphics().setDepth(28);
     this.buildChips();
-    for (const id of ['evelyn', 'nora', 'tyler', 'eloise'] as const)
+    for (const id of ['sis', 'tot', 'neighbor', 'eloise'] as const)
       this.speech.set(
         id,
         this.txt(0, 0, '', 11, '#22223b', { backgroundColor: '#ffffff', padding: { x: 5, y: 2 }, fontStyle: 'bold' })
@@ -399,7 +399,7 @@ export class GameScene extends Phaser.Scene {
   // all placed each frame by projecting from the 3D camera.
   private buildChips() {
     for (const s of STATION_IDS) {
-      const icon = PLATE_ICON[s] ?? (s === 'grill' ? 'burger' : s === 'door' ? 'paw' : s.startsWith('spot_') ? 'shoe' : s === 'highchair' || s === 'playpen' ? 'nora' : '');
+      const icon = PLATE_ICON[s] ?? (s === 'grill' ? 'burger' : s === 'door' ? 'paw' : s.startsWith('spot_') ? 'shoe' : s === 'highchair' || s === 'playpen' ? 'tot' : '');
       if (!icon) continue;
       const g = this.add.graphics();
       g.fillStyle(0x000000, 0.18).fillCircle(1, 2, 12);
@@ -567,12 +567,12 @@ export class GameScene extends Phaser.Scene {
     if (sim.goalMin !== 480) this.weekText.setText(`WEEK ${sim.week} · GAME NIGHT ${clockString(sim.goalMin).replace(' PM', '')}`);
 
     this.renderChips(g);
-    for (const id of ['evelyn', 'nora', 'tyler', 'eloise'] as ActorId[]) {
+    for (const id of ['sis', 'tot', 'neighbor', 'eloise'] as ActorId[]) {
       const a = sim.actors[id];
       const t = this.speech.get(id)!;
       t.setVisible(false);
       if (!a.present || a.state === 'asleep') continue;
-      const text = a.state === 'crying' ? (id === 'nora' ? 'WAAAH' : 'WAAAAH!') : a.speech;
+      const text = a.state === 'crying' ? (id === 'tot' ? 'WAAAH' : 'WAAAAH!') : a.speech;
       if (!text) continue;
       const p = this.headOf(id);
       if (!this.onView(p)) continue;
@@ -670,7 +670,7 @@ export class GameScene extends Phaser.Scene {
       const c = frac > 0.5 ? COLORS.chaosLo : frac > 0.25 ? COLORS.chaosMid : COLORS.chaosHi;
       if (frac > 0.25 || pulse) g.fillStyle(c, 1).fillCircle(p.x, p.y, 3.5);
     }
-    for (const id of ['evelyn', 'nora', 'tyler', 'eloise'] as ActorId[]) {
+    for (const id of ['sis', 'tot', 'neighbor', 'eloise'] as ActorId[]) {
       const a = sim.actors[id];
       if (!a.present || a.state === 'carried') continue;
       const p = M(a.x, a.y);

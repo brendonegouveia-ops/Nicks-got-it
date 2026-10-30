@@ -71,4 +71,4 @@ export const COLORS = {
 export const FONT = '"Trebuchet MS", ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
 // Characters are drawn front-facing (3/4 view) on the top-down plan, at these scales.
-export const ACTOR_SCALE: Record<string, number> = { nick: 0.55, evelyn: 0.62, tyler: 0.6, nora: 0.62, eloise: 0.62 };
+export const ACTOR_SCALE: Record<string, number> = { nick: 0.55, sis: 0.62, neighbor: 0.6, tot: 0.62, eloise: 0.62 };

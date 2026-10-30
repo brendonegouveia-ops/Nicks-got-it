@@ -53,12 +53,12 @@ import {
 } from './house';
 import { Rng } from './rng';
 
-export type KidId = 'evelyn' | 'nora' | 'tyler';
+export type KidId = 'sis' | 'tot' | 'neighbor';
 export type ActorId = KidId | 'eloise';
-export const KID_IDS: KidId[] = ['evelyn', 'nora', 'tyler'];
+export const KID_IDS: KidId[] = ['sis', 'tot', 'neighbor'];
 
 export type ItemId = 'snack' | 'juice_box' | 'sippy_cup' | 'bandaid';
-export type Hand = ItemId | 'nora' | 'phone' | null;
+export type Hand = ItemId | 'tot' | 'phone' | null;
 
 export type RequestKind =
   | 'diaper'
@@ -163,7 +163,7 @@ export type SimEvent =
   | { type: 'joke'; text: string }
   | { type: 'resolved'; req: Request }
   | { type: 'expired'; req: Request }
-  | { type: 'nora_woke' }
+  | { type: 'tot_woke' }
   | { type: 'gameover' }
   | { type: 'won' };
 
@@ -272,7 +272,7 @@ export class Sim {
   backupCharges: number = ABILITIES.callBackup.charges;
 
   nap = { state: 'pending' as 'pending' | 'asleep' | 'done' | 'woken', noise: 0 };
-  noraCrankyUntil = 0;
+  totCrankyUntil = 0;
 
   facetime = {
     state: 'pending' as 'pending' | 'active' | 'done',
@@ -315,9 +315,9 @@ export class Sim {
       };
     };
     this.actors = {
-      evelyn: mk('evelyn', 'living', true),
-      nora: mk('nora', 'living', false),
-      tyler: mk('tyler', 'backyard', false),
+      sis: mk('sis', 'living', true),
+      tot: mk('tot', 'living', false),
+      neighbor: mk('neighbor', 'backyard', false),
       eloise: mk('eloise', 'garage', false),
     };
     this.thermostatAt = this.rng.range(...THERMOSTAT.firstT) / CLOCK.minutesPerSec;
@@ -481,13 +481,13 @@ export class Sim {
 
   private timeline() {
     this.once('start', 0, () => this.text(TEXTS.start));
-    this.once('nora', TIMELINE.noraJoins, () => {
-      const n = this.actors.nora;
+    this.once('tot', TIMELINE.totJoins, () => {
+      const n = this.actors.tot;
       n.present = true;
       Object.assign(n, floorPoint(this.rng, 'living'));
       n.room = 'living';
       n.nextReq = 5;
-      this.text(TEXTS.noraJoins);
+      this.text(TEXTS.totJoins);
     });
     this.once('dog', TIMELINE.dogJoins, () => {
       const d = this.actors.eloise;
@@ -501,24 +501,24 @@ export class Sim {
     });
     this.once('lunch', TIMELINE.lunchRush, () => this.text(TEXTS.lunchRush));
     this.once('nap', TIMELINE.nap, () => this.startNap());
-    this.once('tyler', TIMELINE.tylerJoins, () => {
-      const ty = this.actors.tyler;
+    this.once('neighbor', TIMELINE.neighborJoins, () => {
+      const ty = this.actors.neighbor;
       ty.present = true;
       Object.assign(ty, { x: 200, y: 24 });
       ty.dest = floorPoint(this.rng, 'backyard');
       ty.room = 'backyard';
       ty.nextReq = 8;
-      this.text(TEXTS.tyler);
-      this.say('tyler', 'Hi Mr. Nick!');
+      this.text(TEXTS.neighbor);
+      this.say('neighbor', 'Hi Mr. Nick!');
     });
-    this.once('napEnd', TIMELINE.noraWakes, () => {
+    this.once('napEnd', TIMELINE.totWakes, () => {
       if (this.nap.state === 'asleep') {
         this.nap.state = 'done';
-        const n = this.actors.nora;
+        const n = this.actors.tot;
         n.state = 'idle';
         n.nextReq = 4;
-        this.say('nora', 'Hi Dada.');
-        this.text(TEXTS.noraWakes);
+        this.say('tot', 'Hi Dada.');
+        this.text(TEXTS.totWakes);
       }
     });
     this.once('facetime', TIMELINE.faceTime, () => this.startFacetime());
@@ -555,9 +555,9 @@ export class Sim {
 
   private updateNick(dt: number, tdt: number) {
     const n = this.nick;
-    if (n.hand === 'nora') {
+    if (n.hand === 'tot') {
       n.carryLeft -= tdt;
-      if (n.carryLeft <= 0) this.setDownNora(false);
+      if (n.carryLeft <= 0) this.setDownTot(false);
     }
 
     n.moving = false;
@@ -606,8 +606,8 @@ export class Sim {
       }
     }
     n.room = roomAt(n.x, n.y);
-    if (n.hand === 'nora') {
-      const no = this.actors.nora;
+    if (n.hand === 'tot') {
+      const no = this.actors.tot;
       no.x = n.x;
       no.y = n.y;
       no.room = n.room;
@@ -665,7 +665,7 @@ export class Sim {
 
   dropHand(): boolean {
     const h = this.nick.hand;
-    if (h == null || h === 'nora' || h === 'phone') return false;
+    if (h == null || h === 'tot' || h === 'phone') return false;
     this.nick.hand = null;
     this.toast(`Put the ${ITEM_NAMES[h]} down.`);
     return true;
@@ -680,7 +680,7 @@ export class Sim {
       const s = t.station;
       const item = STATION_ITEM[s];
       if (item) {
-        if (n.hand === 'nora') return NICK_LINES.handsBusy;
+        if (n.hand === 'tot') return NICK_LINES.handsBusy;
         if (n.hand === 'phone') return NICK_LINES.handsFullPhone;
         if (n.hand === item) return 'Already got one.';
         return { ...base, kind: 'tap', title: `Grab ${ITEM_NAMES[item]}`, hint: 'Tap', icon: item };
@@ -691,8 +691,8 @@ export class Sim {
           return { ...base, kind: 'hold', title: 'Refill coffee', hint: 'Hold', icon: 'coffee', holdSec: GESTURES.coffeeHoldSec };
         case 'highchair':
         case 'playpen':
-          if (n.hand !== 'nora') return '';
-          return { ...base, kind: 'tap', title: `Nora → ${STATIONS[s].label.toLowerCase()}`, hint: 'Tap', icon: 'nora' };
+          if (n.hand !== 'tot') return '';
+          return { ...base, kind: 'tap', title: `Little Sis → ${STATIONS[s].label.toLowerCase()}`, hint: 'Tap', icon: 'tot' };
         case 'thermostat': {
           const r = this.requests.find((x) => x.kind === 'thermostat');
           if (!r) return NICK_LINES.thermostatOk;
@@ -728,7 +728,7 @@ export class Sim {
     }
     if (t.t === 'kid') {
       const h = n.hand;
-      if (!h || h === 'nora' || h === 'phone') return `${CAST[t.kid].name} is crying. Bring a snack, a drink or a band-aid.`;
+      if (!h || h === 'tot' || h === 'phone') return `${CAST[t.kid].name} is crying. Bring a snack, a drink or a band-aid.`;
       return { ...base, kind: 'tap', title: `Give ${CAST[t.kid].name} the ${ITEM_NAMES[h]}`, hint: 'Tap. Stops the crying.', icon: h };
     }
     const r = this.req(t.req);
@@ -747,7 +747,7 @@ export class Sim {
         return { ...rb, kind: 'hold', title: 'Change diaper', hint: 'Hold', icon: 'diaper', holdSec: GESTURES.diaperHoldSec };
       case 'uppy':
         if (n.hand === 'phone') return NICK_LINES.handsFullPhone;
-        return { ...rb, kind: 'tap', title: 'Pick up Nora', hint: 'Tap', icon: 'nora' };
+        return { ...rb, kind: 'tap', title: 'Pick up Little Sis', hint: 'Tap', icon: 'tot' };
       case 'watch_this':
         return { ...rb, kind: 'hold', title: `Watch ${who}`, hint: 'Hold. Really watch.', icon: 'eyes', holdSec: GESTURES.watchThisHoldSec };
       case 'booboo':
@@ -805,7 +805,7 @@ export class Sim {
     this.emit({ type: 'haptic', pattern: 20 });
 
     const h = this.nick.hand;
-    const busy = h === 'nora' || h === 'phone';
+    const busy = h === 'tot' || h === 'phone';
     if (target.t === 'kid') {
       const a = this.actors[target.kid];
       if (a.state === 'crying' && h && !busy) {
@@ -815,7 +815,7 @@ export class Sim {
         this.nick.hand = null;
         this.chaos = Math.max(0, this.chaos - CHAOS.comfortRefund);
         this.stats.handled++;
-        this.say(target.kid, target.kid === 'nora' ? '*sniff* Tank you.' : '*sniff* …thanks.', 1.6);
+        this.say(target.kid, target.kid === 'tot' ? '*sniff* Tank you.' : '*sniff* …thanks.', 1.6);
         this.emit({ type: 'sfx', name: 'good' });
       }
     } else if (target?.t === 'station') {
@@ -838,7 +838,7 @@ export class Sim {
         this.stats.coffeeRefills++;
         this.emit({ type: 'sfx', name: 'good' });
       } else if (s === 'highchair' || s === 'playpen') {
-        this.setDownNora(true, s);
+        this.setDownTot(true, s);
       } else if (s === 'thermostat' && r) {
         this.resolve(r);
         this.thermostatAt = this.t + this.rng.range(...THERMOSTAT.gapSec);
@@ -880,9 +880,9 @@ export class Sim {
           }
           if (h) this.toast(`Put the ${ITEM_NAMES[h]} down.`);
           this.resolve(r);
-          this.nick.hand = 'nora';
+          this.nick.hand = 'tot';
           this.nick.carryLeft = UPPY.carrySec;
-          const no = this.actors.nora;
+          const no = this.actors.tot;
           no.state = 'carried';
           no.room = this.nick.room;
           break;
@@ -964,12 +964,12 @@ export class Sim {
     else if (kind === 'thermostat') patience = Infinity;
     else {
       patience = PATIENCE.baseSec * (PATIENCE.kind as Record<string, number>)[kind] * this.patienceFactor();
-      const cranky = owner === 'nora' || extra.kids?.includes('nora');
-      if (cranky && this.gm < this.noraCrankyUntil) patience *= NAP.crankyPatience;
+      const cranky = owner === 'tot' || extra.kids?.includes('tot');
+      if (cranky && this.gm < this.totCrankyUntil) patience *= NAP.crankyPatience;
     }
     const r: Request = { id: this.nextId++, kind, owner, room, patience, left: patience, ...extra };
     this.requests.push(r);
-    if (owner === 'evelyn' || owner === 'nora' || owner === 'tyler') this.actors[owner].req = r.id;
+    if (owner === 'sis' || owner === 'tot' || owner === 'neighbor') this.actors[owner].req = r.id;
     for (const k of extra.kids ?? []) this.actors[k].req = r.id;
     this.emit({ type: 'sfx', name: kind === 'flip' ? 'sizzle' : 'pop' });
     return r;
@@ -993,10 +993,10 @@ export class Sim {
     this.emit({ type: 'resolved', req: r });
     this.emit({ type: 'sfx', name: 'good' });
     const owner = r.owner;
-    if (owner === 'evelyn' || owner === 'tyler') {
+    if (owner === 'sis' || owner === 'neighbor') {
       this.say(owner, this.rng.pick(['Thanks Dad!', 'Yay!', 'Okay.', 'Cool.']), 1.4);
-    } else if (owner === 'nora') {
-      this.say('nora', this.rng.pick(['Tank you!', 'Yay!', 'Mmm.']), 1.4);
+    } else if (owner === 'tot') {
+      this.say('tot', this.rng.pick(['Tank you!', 'Yay!', 'Mmm.']), 1.4);
     }
   }
 
@@ -1004,7 +1004,7 @@ export class Sim {
   // (most urgent one if several). Its timer runs slow ("On my way!").
   get promisedId(): number | null {
     const h = this.nick.hand;
-    if (!h || h === 'nora' || h === 'phone') return null;
+    if (!h || h === 'tot' || h === 'phone') return null;
     let best: Request | null = null;
     for (const r of this.requests) {
       const wants = r.kind === 'booboo' ? 'bandaid' : FETCH_ITEM[r.kind];
@@ -1067,9 +1067,9 @@ export class Sim {
       const r = this.req(a.req);
       if (r) this.removeRequest(r);
     }
-    if (a.state === 'carried') this.setDownNora(false);
+    if (a.state === 'carried') this.setDownTot(false);
     a.state = 'crying';
-    a.cryLeft = (k === 'nora' ? CRY.noraSec : CRY.sec) * severity;
+    a.cryLeft = (k === 'tot' ? CRY.totSec : CRY.sec) * severity;
     a.speech = null;
     this.stats.cries++;
     this.emit({ type: 'sfx', name: 'cry' });
@@ -1110,11 +1110,11 @@ export class Sim {
       if (a.req == null) {
         a.nextWander -= tdt;
         if (a.nextWander <= 0) {
-          a.nextWander = this.rng.range(...(k === 'nora' ? WANDER.noraGapSec : WANDER.gapSec));
+          a.nextWander = this.rng.range(...(k === 'tot' ? WANDER.totGapSec : WANDER.gapSec));
           const room = this.rng.chance(WANDER.moveChance) ? this.rng.pick(neighbors(a.room)) : a.room;
           a.dest = floorPoint(this.rng, room);
         }
-        this.walk(a, MOVE.kidSpeed * (k === 'nora' ? 0.75 : 1), tdt);
+        this.walk(a, MOVE.kidSpeed * (k === 'tot' ? 0.75 : 1), tdt);
         a.nextReq -= tdt;
         if (a.nextReq <= 0) {
           a.dest = null; // kids stand still while they want something
@@ -1173,22 +1173,22 @@ export class Sim {
     }
   }
 
-  setDownNora(early: boolean, station?: StationId) {
-    if (this.nick.hand !== 'nora') return;
+  setDownTot(early: boolean, station?: StationId) {
+    if (this.nick.hand !== 'tot') return;
     this.nick.hand = null;
     this.nick.carryLeft = 0;
-    const n = this.actors.nora;
+    const n = this.actors.tot;
     n.state = 'idle';
     n.dest = null;
     if (station) Object.assign(n, { x: STATIONS[station].x, y: STATIONS[station].y + 4 });
     else Object.assign(n, { x: this.nick.x + 14 * this.nick.facing, y: this.nick.y + 4 });
     n.room = roomAt(n.x, n.y);
-    n.nextReq = this.kidGap('nora');
-    n.nextWander = this.rng.range(...WANDER.noraGapSec);
+    n.nextReq = this.kidGap('tot');
+    n.nextWander = this.rng.range(...WANDER.totGapSec);
     if (early) {
       if (this.rng.chance(UPPY.earlyDropCryChance)) {
         this.addChaos(CHAOS.earlyDropCry, 'cry');
-        this.startCry('nora', 1);
+        this.startCry('tot', 1);
       } else {
         this.toast(NICK_LINES.setDown);
       }
@@ -1197,8 +1197,8 @@ export class Sim {
 
   // ------------------------------------------------------------ nap
   private startNap() {
-    const n = this.actors.nora;
-    if (n.state === 'carried') this.setDownNora(false);
+    const n = this.actors.tot;
+    if (n.state === 'carried') this.setDownTot(false);
     if (n.req != null) {
       const r = this.req(n.req);
       if (r) this.removeRequest(r);
@@ -1219,20 +1219,20 @@ export class Sim {
   private noise(n: number) {
     if (this.nap.state !== 'asleep') return;
     this.nap.noise = Math.min(100, this.nap.noise + n);
-    if (this.nap.noise >= 100) this.wakeNora();
+    if (this.nap.noise >= 100) this.wakeTot();
   }
 
-  private wakeNora() {
+  private wakeTot() {
     if (this.nap.state !== 'asleep') return;
     this.nap.state = 'woken';
     this.nap.noise = 0;
-    this.noraCrankyUntil = NAP.crankyUntilT;
-    const n = this.actors.nora;
+    this.totCrankyUntil = NAP.crankyUntilT;
+    const n = this.actors.tot;
     n.state = 'idle';
     n.nextReq = 3;
     this.addChaos(CHAOS.napWake, 'nap');
-    this.toast('NORA’S UP.');
-    this.emit({ type: 'nora_woke' });
+    this.toast('LITTLE SIS IS UP.');
+    this.emit({ type: 'tot_woke' });
     this.emit({ type: 'sfx', name: 'cry' });
   }
 
@@ -1288,7 +1288,7 @@ export class Sim {
     if (act === 'needs_out' && (waitingOut || this.dog.needsOutCd > 0)) act = 'bark';
     if (act === 'spill' && this.requests.filter((r) => r.kind === 'spill').length >= DOG.maxSpills) act = 'bark';
     if (act === 'steals_shoe') {
-      const victims = (['evelyn', 'tyler'] as KidId[]).filter((k) => {
+      const victims = (['sis', 'neighbor'] as KidId[]).filter((k) => {
         const a = this.actors[k];
         return a.present && a.state === 'idle' && a.req == null;
       });
@@ -1364,7 +1364,7 @@ export class Sim {
   // ------------------------------------------------------------ FaceTime
   private startFacetime() {
     const n = this.nick;
-    if (n.hand === 'nora') this.setDownNora(false);
+    if (n.hand === 'tot') this.setDownTot(false);
     if (n.hand && n.hand !== 'phone') n.pocket = n.hand as ItemId;
     n.hand = 'phone';
     this.facetime.state = 'active';
@@ -1425,7 +1425,7 @@ export class Sim {
     this.stats.jokes++;
     for (const k of KID_IDS) {
       const a = this.actors[k];
-      if (a.present && a.state !== 'asleep') this.say(k, k === 'nora' ? 'Bah!' : this.rng.pick(GROANS), 3);
+      if (a.present && a.state !== 'asleep') this.say(k, k === 'tot' ? 'Bah!' : this.rng.pick(GROANS), 3);
     }
     if (this.actors.eloise.present) this.say('eloise', 'Hrrmf.', 3);
     this.emit({ type: 'joke', text: joke });

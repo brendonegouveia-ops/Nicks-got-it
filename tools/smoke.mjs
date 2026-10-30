@@ -93,7 +93,7 @@ await sim(() => {
   s.requests.length = 0;
   s.interaction = null;
   Object.assign(s.nick, { x: 300, y: 300, coffee: 1 });
-  for (const [id, x] of [['evelyn', 280], ['tyler', 320]]) Object.assign(s.actors[id], { present: true, x, y: 300, room: 'living', state: 'idle' });
+  for (const [id, x] of [['sis', 280], ['neighbor', 320]]) Object.assign(s.actors[id], { present: true, x, y: 300, room: 'living', state: 'idle' });
 });
 const inject = (spec) =>
   sim((spec) => {
@@ -109,7 +109,7 @@ const inject = (spec) =>
   }, spec);
 const waitPanel = (kind) =>
   page.waitForFunction((k) => window.__nick.scene.sim.interaction?.kind === k, kind, { timeout: 20000 }).catch(async (e) => {
-    console.log('waitPanel', kind, await sim(() => { const s = window.__nick.scene.sim; return { it: s.interaction?.title, note: s.note, steer: s.steering, engaged: s.engaged, nick: [s.nick.x, s.nick.y], reqs: s.requests.map((r) => r.kind), ev: [s.actors.evelyn.x, s.actors.evelyn.y] }; }));
+    console.log('waitPanel', kind, await sim(() => { const s = window.__nick.scene.sim; return { it: s.interaction?.title, note: s.note, steer: s.steering, engaged: s.engaged, nick: [s.nick.x, s.nick.y], reqs: s.requests.map((r) => r.kind), ev: [s.actors.sis.x, s.actors.sis.y] }; }));
     throw e;
   });
 const gone = (id) => sim((id) => !window.__nick.scene.sim.requests.some((r) => r.id === id), id);
@@ -120,13 +120,13 @@ const check = async (label, id) => {
 };
 
 { // TAP: hand over a snack
-  const id = await inject({ kind: 'snack', owner: 'evelyn', hand: 'snack' });
+  const id = await inject({ kind: 'snack', owner: 'sis', hand: 'snack' });
   await waitPanel('tap');
   await tapPanel();
   await check('tap', id);
 }
 { // HOLD
-  const id = await inject({ kind: 'watch_this', owner: 'evelyn' });
+  const id = await inject({ kind: 'watch_this', owner: 'sis' });
   await waitPanel('hold');
   await page.screenshot({ path: `${OUT}/04-action-panel.png` });
   await touch('touchStart', PX, PY);
@@ -137,7 +137,7 @@ const check = async (label, id) => {
   await check('hold', id);
 }
 { // CHOICE -> RUB (band-aid)
-  const id = await inject({ kind: 'booboo', owner: 'tyler', hand: 'bandaid' });
+  const id = await inject({ kind: 'booboo', owner: 'neighbor', hand: 'bandaid' });
   await waitPanel('choice');
   await page.screenshot({ path: `${OUT}/04b-choice.png` });
   await tapPanel(PX, ROW1);
@@ -164,13 +164,13 @@ const check = async (label, id) => {
   await check('swipe', id);
 }
 { // CHOICE (screen time: No)
-  const id = await inject({ kind: 'screen_time', owner: 'evelyn' });
+  const id = await inject({ kind: 'screen_time', owner: 'sis' });
   await waitPanel('choice');
   await tapPanel(PX, ROW2);
   await check('choice', id);
 }
 { // MULTI (fight: tap each kid)
-  const id = await inject({ kind: 'fight', owner: 'evelyn', kids: ['evelyn', 'tyler'] });
+  const id = await inject({ kind: 'fight', owner: 'sis', kids: ['sis', 'neighbor'] });
   await waitPanel('multi');
   await page.screenshot({ path: `${OUT}/04d-fight.png` });
   await tapPanel(PX, ROW1);
@@ -194,7 +194,7 @@ const check = async (label, id) => {
   await sim(() => (window.__nick.scene.timeScale = 0.25));
 }
 
-// Jump to the nap with Nora, Tyler and Eloise in play.
+// Jump to the nap with Little Sis, Neighbor Kid and Eloise in play.
 await sim(() => {
   const s = window.__nick.scene.sim;
   while (s.gm < 245 && !s.over) {

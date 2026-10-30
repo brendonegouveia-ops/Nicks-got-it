@@ -6,7 +6,7 @@ import { COFFEE } from '../config';
 import { COUCH_POS, DOORS, FURNITURE, ROOM_RECTS, STATIONS, WALLS, WORLD as W_SIM, type StationId } from '../sim/house';
 import { KID_IDS, type ActorId, type Sim } from '../sim/sim';
 import { W, WORLD } from '../game/layout';
-import { ball, box, cyl, makeEloise, makeEvelyn, makeItem, makeNick, makeNora, makeTyler, mat, type Rig } from './models';
+import { ball, box, cyl, makeEloise, makeSis, makeItem, makeNick, makeTot, makeNeighbor, mat, type Rig } from './models';
 
 // Cutaway walls (about chest height), so rooms read from the follow camera.
 const WALL_H = 56;
@@ -145,9 +145,9 @@ export class World3D {
       sc.add(r.root);
     };
     add('nick', makeNick());
-    add('evelyn', makeEvelyn());
-    add('nora', makeNora());
-    add('tyler', makeTyler());
+    add('sis', makeSis());
+    add('tot', makeTot());
+    add('neighbor', makeNeighbor());
     add('eloise', makeEloise());
 
     // Pools: highlight rings, spills, burgers.
@@ -368,7 +368,7 @@ export class World3D {
     }
     // Free-hand item.
     const h = n.hand;
-    const key = h && h !== 'nora' ? h : '';
+    const key = h && h !== 'tot' ? h : '';
     if (key !== this.handKey && nick.hand) {
       this.handKey = key;
       nick.hand.clear();
@@ -380,7 +380,7 @@ export class World3D {
     const pulse = 0.5 + Math.sin(now * 6) * 0.5;
     const stRing = (s: StationId, color: number, r = 22) => this.ring({ x: STATIONS[s].x, z: STATIONS[s].y, r: r + pulse * 3, color });
     if (n.coffee < COFFEE.slowBelow) stRing('coffee', 0xe5484d);
-    if (n.hand === 'nora') {
+    if (n.hand === 'tot') {
       stRing('highchair', 0xffd166);
       stRing('playpen', 0xffd166, 28);
     }
@@ -402,7 +402,7 @@ export class World3D {
       const a = sim.anchorOf(promised);
       this.ring({ x: a.x, z: a.y, r: 22 + pulse * 3, color: 0x4ea8de });
     }
-    if (h && h !== 'nora' && h !== 'phone')
+    if (h && h !== 'tot' && h !== 'phone')
       for (const k of KID_IDS) {
         const a = sim.actors[k];
         if (a.present && a.state === 'crying') this.ring({ x: a.x, z: a.y, r: 18 + pulse * 2, color: 0x4ea8de, alpha: 0.7 });

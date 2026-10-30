@@ -461,9 +461,9 @@ export class ActionPanel {
       y -= ph;
       this.hitRect = { x: L, y, w: PANEL.w, h: ph };
       g.fillStyle(0x22223b, 0.88).fillRoundedRect(L, y, PANEL.w, ph, 14);
-      this.addIcon(h === 'nora' ? 'nora' : h === 'phone' ? 'phone' : h, L + 22, y + ph / 2, 20);
-      const name = h === 'nora' ? 'Nora, on your hip' : h === 'phone' ? 'Mom & Dad' : ITEM_NAMES[h];
-      const droppable = h !== 'nora' && h !== 'phone';
+      this.addIcon(h === 'tot' ? 'tot' : h === 'phone' ? 'phone' : h, L + 22, y + ph / 2, 20);
+      const name = h === 'tot' ? 'Little Sis, on your hip' : h === 'phone' ? 'Mom & Dad' : ITEM_NAMES[h];
+      const droppable = h !== 'tot' && h !== 'phone';
       this.addText(this.txt(L + 40, y + 7, h === 'phone' ? 'ON FACETIME' : 'HOLDING', 9, '#a5a7c4', { fontStyle: 'bold' }));
       this.addText(this.txt(L + 40, y + 20, name.charAt(0).toUpperCase() + name.slice(1), 13, '#ffffff', { fontStyle: 'bold' }));
       if (droppable) {
