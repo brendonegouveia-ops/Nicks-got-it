@@ -95,7 +95,7 @@ export function drawNick(g: G) {
   face(g, 0, -86, 12);
 }
 
-export function drawEvelyn(g: G) {
+export function drawSis(g: G) {
   shadow(g, 30);
   g.fillStyle(0xff6fa8, 1);
   g.fillRoundedRect(-9, -5, 7, 5, 2);
@@ -126,7 +126,7 @@ export function drawEvelyn(g: G) {
   face(g, 0, -49, 9);
 }
 
-export function drawTyler(g: G) {
+export function drawNeighbor(g: G) {
   shadow(g, 32);
   g.fillStyle(0xffffff, 1);
   g.fillRoundedRect(-10, -5, 8, 5, 2);
@@ -155,7 +155,7 @@ export function drawTyler(g: G) {
   face(g, 0, -56, 9);
 }
 
-export function drawNora(g: G) {
+export function drawTot(g: G) {
   shadow(g, 24);
   g.fillStyle(SKIN, 1);
   g.fillEllipse(-5, -5, 8, 9);
@@ -211,13 +211,13 @@ export function drawEloise(g: G) {
   g.fillEllipse(28, -19, 4, 5); // tongue
 }
 
-export const CHAR_HEIGHT: Record<string, number> = { nick: 100, evelyn: 62, tyler: 70, nora: 52, eloise: 42 };
+export const CHAR_HEIGHT: Record<string, number> = { nick: 100, sis: 62, neighbor: 70, tot: 52, eloise: 42 };
 
 export function drawActor(g: G, id: string) {
   if (id === 'nick') drawNick(g);
-  else if (id === 'evelyn') drawEvelyn(g);
-  else if (id === 'tyler') drawTyler(g);
-  else if (id === 'nora') drawNora(g);
+  else if (id === 'sis') drawSis(g);
+  else if (id === 'neighbor') drawNeighbor(g);
+  else if (id === 'tot') drawTot(g);
   else drawEloise(g);
 }
 
@@ -285,7 +285,7 @@ export function drawIcon(g: G, key: string, s = 28) {
       g.fillRect(R(-13), R(-9), R(4), R(5));
       g.fillRect(R(9), R(-9), R(4), R(5));
       break;
-    case 'nora':
+    case 'tot':
     case 'uppy':
       g.fillStyle(SKIN, 1);
       g.fillCircle(0, R(1), R(7));

@@ -211,7 +211,7 @@ export function blocked(x: number, y: number, r: number): boolean {
 
 // Move a circle by (dx, dy), sliding along walls (axis-separated, sub-stepped).
 export function moveCircle(x: number, y: number, dx: number, dy: number, r: number): { x: number; y: number } {
-  // Someone placed inside furniture (e.g. Nora waking on the couch) may walk out freely.
+  // Someone placed inside furniture (e.g. Little Sis waking on the couch) may walk out freely.
   if (blocked(x, y, r)) return { x: x + dx, y: y + dy };
   const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 3));
   const sx = dx / steps;

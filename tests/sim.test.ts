@@ -38,12 +38,12 @@ function quiet(seed = 1): Sim {
 function inject(sim: Sim, r: Partial<Request> & Pick<Request, 'kind' | 'owner' | 'room'>): Request {
   const req: Request = { id: 9000 + sim.requests.length, patience: 8, left: 8, ...r };
   sim.requests.push(req);
-  if (r.owner === 'evelyn' || r.owner === 'nora' || r.owner === 'tyler') sim.actors[r.owner].req = req.id;
+  if (r.owner === 'sis' || r.owner === 'tot' || r.owner === 'neighbor') sim.actors[r.owner].req = req.id;
   return req;
 }
 
 // Put a kid somewhere in the living room and stand Nick next to them.
-function kidHere(sim: Sim, id: 'evelyn' | 'nora' | 'tyler', x = 300, y = 300) {
+function kidHere(sim: Sim, id: 'sis' | 'tot' | 'neighbor', x = 300, y = 300) {
   Object.assign(sim.actors[id], { present: true, x, y, room: 'living', state: 'idle', dest: null });
   sim.nick.x = x + 20;
   sim.nick.y = y;
@@ -140,8 +140,8 @@ describe('jobs', () => {
 
   it('fetch: grab at the counter, deliver at the kid', () => {
     const sim = quiet();
-    kidHere(sim, 'evelyn', 300, 300);
-    const r = inject(sim, { kind: 'snack', owner: 'evelyn', room: 'living' });
+    kidHere(sim, 'sis', 300, 300);
+    const r = inject(sim, { kind: 'snack', owner: 'sis', room: 'living' });
     sim.update(1 / 60);
     expect(sim.interaction).toBe(null);
     expect(sim.note).toMatch(/snack/);
@@ -157,8 +157,8 @@ describe('jobs', () => {
 
   it('on my way: grabbing what a kid wants tops up and slows their timer', () => {
     const sim = quiet();
-    kidHere(sim, 'evelyn', 300, 300);
-    const r = inject(sim, { kind: 'juice_box', owner: 'evelyn', room: 'living', patience: 10, left: 2 });
+    kidHere(sim, 'sis', 300, 300);
+    const r = inject(sim, { kind: 'juice_box', owner: 'sis', room: 'living', patience: 10, left: 2 });
     walkToStation(sim, 'juice');
     sim.completeGesture();
     expect(sim.promisedId).toBe(r.id);
@@ -170,23 +170,23 @@ describe('jobs', () => {
 
   it('a crying kid takes the item Nick is holding and stops crying', () => {
     const sim = quiet();
-    kidHere(sim, 'tyler', 300, 300);
-    Object.assign(sim.actors.tyler, { state: 'crying', cryLeft: 10 });
+    kidHere(sim, 'neighbor', 300, 300);
+    Object.assign(sim.actors.neighbor, { state: 'crying', cryLeft: 10 });
     sim.nick.hand = 'snack';
     sim.chaos = 20;
     sim.update(1 / 60);
-    expect(sim.interaction?.target).toEqual({ t: 'kid', kid: 'tyler' });
+    expect(sim.interaction?.target).toEqual({ t: 'kid', kid: 'neighbor' });
     sim.completeGesture();
-    expect(sim.actors.tyler.state).toBe('idle');
+    expect(sim.actors.neighbor.state).toBe('idle');
     expect(sim.nick.hand).toBe(null);
     expect(sim.chaos).toBeLessThan(20);
   });
 
   it('engaged in a gesture: Nick cannot move, other timers keep running', () => {
     const sim = quiet();
-    kidHere(sim, 'nora', 300, 300);
-    inject(sim, { kind: 'diaper', owner: 'nora', room: 'living' });
-    const b = inject(sim, { kind: 'snack', owner: 'evelyn', room: 'kitchen', left: 8 });
+    kidHere(sim, 'tot', 300, 300);
+    inject(sim, { kind: 'diaper', owner: 'tot', room: 'living' });
+    const b = inject(sim, { kind: 'snack', owner: 'sis', room: 'kitchen', left: 8 });
     sim.update(1 / 60);
     expect(sim.interaction?.kind).toBe('hold');
     sim.engage(true);
@@ -199,10 +199,10 @@ describe('jobs', () => {
 
   it('watch_this works from anywhere in the same room', () => {
     const sim = quiet();
-    kidHere(sim, 'evelyn', 230, 480);
+    kidHere(sim, 'sis', 230, 480);
     sim.nick.x = 360;
     sim.nick.y = 200;
-    inject(sim, { kind: 'watch_this', owner: 'evelyn', room: 'living' });
+    inject(sim, { kind: 'watch_this', owner: 'sis', room: 'living' });
     sim.update(1 / 60);
     expect(sim.interaction?.kind).toBe('hold');
   });
@@ -211,12 +211,12 @@ describe('jobs', () => {
 describe('requests', () => {
   it('expired kid request: cry, chaos, and other kids speed up 20%', () => {
     const sim = quiet();
-    sim.actors.nora.present = true;
-    const a = inject(sim, { kind: 'diaper', owner: 'nora', room: 'living', left: 0.01 });
-    const b = inject(sim, { kind: 'snack', owner: 'evelyn', room: 'living', left: 8 });
+    sim.actors.tot.present = true;
+    const a = inject(sim, { kind: 'diaper', owner: 'tot', room: 'living', left: 0.01 });
+    const b = inject(sim, { kind: 'snack', owner: 'sis', room: 'living', left: 8 });
     step(sim, 0.05, 0.05);
     expect(sim.requests).not.toContain(a);
-    expect(sim.actors.nora.state).toBe('crying');
+    expect(sim.actors.tot.state).toBe('crying');
     expect(sim.chaos).toBeGreaterThanOrEqual(CHAOS.expireKid);
     const before = b.left;
     step(sim, 1, 0.05);
@@ -225,23 +225,23 @@ describe('requests', () => {
 
   it('screen time: Yes melts down 60 s later at 2x', () => {
     const sim = quiet();
-    kidHere(sim, 'evelyn');
-    inject(sim, { kind: 'screen_time', owner: 'evelyn', room: 'living' });
+    kidHere(sim, 'sis');
+    inject(sim, { kind: 'screen_time', owner: 'sis', room: 'living' });
     sim.update(1 / 60);
     sim.choose(0);
     expect(sim.chaos).toBe(0);
-    sim.actors.evelyn.nextReq = 1e9; // resolving re-arms her next request; keep her quiet
+    sim.actors.sis.nextReq = 1e9; // resolving re-arms her next request; keep her quiet
     step(sim, 59);
-    expect(sim.actors.evelyn.state).toBe('idle');
+    expect(sim.actors.sis.state).toBe('idle');
     step(sim, 1.2);
-    expect(sim.actors.evelyn.state).toBe('crying');
+    expect(sim.actors.sis.state).toBe('crying');
     expect(sim.chaos).toBeGreaterThanOrEqual(CHAOS.expireKid * 2);
   });
 
   it('booboo: dirt is instant +3, band-aid needs one in hand then RUB', () => {
     const sim = quiet();
-    kidHere(sim, 'evelyn');
-    const r = inject(sim, { kind: 'booboo', owner: 'evelyn', room: 'living' });
+    kidHere(sim, 'sis');
+    const r = inject(sim, { kind: 'booboo', owner: 'sis', room: 'living' });
     sim.update(1 / 60);
     expect(sim.interaction?.options?.[0].enabled).toBe(false);
     sim.choose(1);
@@ -250,8 +250,8 @@ describe('requests', () => {
 
     const s2 = quiet();
     s2.nick.hand = 'bandaid';
-    kidHere(s2, 'evelyn');
-    const r2 = inject(s2, { kind: 'booboo', owner: 'evelyn', room: 'living' });
+    kidHere(s2, 'sis');
+    const r2 = inject(s2, { kind: 'booboo', owner: 'sis', room: 'living' });
     s2.update(1 / 60);
     s2.choose(0);
     s2.update(1 / 60); // focus keeps the rub (same job) instead of rebuilding the choice
@@ -263,7 +263,7 @@ describe('requests', () => {
 
   it('lost shoe: check its 3 garage spots; the third has it', () => {
     const sim = quiet();
-    const r = inject(sim, { kind: 'lost_shoe', owner: 'evelyn', room: 'living', spots: ['spot_bin', 'spot_cooler', 'spot_bike'], checked: [], left: 50, patience: 50 });
+    const r = inject(sim, { kind: 'lost_shoe', owner: 'sis', room: 'living', spots: ['spot_bin', 'spot_cooler', 'spot_bike'], checked: [], left: 50, patience: 50 });
     walkToStation(sim, 'spot_toolbox');
     expect(sim.interaction).toBe(null); // not one of this shoe's spots
     for (const s of ['spot_bin', 'spot_cooler', 'spot_bike'] as const) {
@@ -278,17 +278,17 @@ describe('requests', () => {
     let cried = 0;
     for (let seed = 1; seed <= 200; seed++) {
       const sim = quiet(seed);
-      kidHere(sim, 'nora');
-      inject(sim, { kind: 'uppy', owner: 'nora', room: 'living' });
+      kidHere(sim, 'tot');
+      inject(sim, { kind: 'uppy', owner: 'tot', room: 'living' });
       sim.update(1 / 60);
       sim.completeGesture();
-      expect(sim.nick.hand).toBe('nora');
+      expect(sim.nick.hand).toBe('tot');
       walkToStation(sim, 'snacks');
-      expect(sim.interaction).toBe(null); // can't grab with Nora on the hip
+      expect(sim.interaction).toBe(null); // can't grab with Little Sis on the hip
       walkToStation(sim, 'highchair');
       sim.completeGesture();
       expect(sim.nick.hand).toBe(null);
-      if (sim.actors.nora.state === 'crying') cried++;
+      if (sim.actors.tot.state === 'crying') cried++;
     }
     expect(cried / 200).toBeGreaterThan(UPPY.earlyDropCryChance - 0.1);
     expect(cried / 200).toBeLessThan(UPPY.earlyDropCryChance + 0.1);
@@ -296,10 +296,10 @@ describe('requests', () => {
 });
 
 describe('systems', () => {
-  it('burnt burger: smoke alarm +15 and wakes a napping Nora (+10)', () => {
+  it('burnt burger: smoke alarm +15 and wakes a napping Little Sis (+10)', () => {
     const sim = quiet();
     sim.t = 239 / CLOCK.minutesPerSec;
-    sim.actors.nora.present = true;
+    sim.actors.tot.present = true;
     step(sim, 2);
     expect(sim.nap.state).toBe('asleep');
     sim.chaos = 0;
@@ -324,7 +324,7 @@ describe('systems', () => {
 
   it('dad joke freezes request timers for 3 s', () => {
     const sim = quiet();
-    const r = inject(sim, { kind: 'watch_this', owner: 'evelyn', room: 'living' });
+    const r = inject(sim, { kind: 'watch_this', owner: 'sis', room: 'living' });
     expect(sim.dadJoke()).toBeTruthy();
     step(sim, 2.9);
     expect(r.left).toBe(8);
@@ -335,9 +335,9 @@ describe('systems', () => {
 
   it('Call for Backup: 2 charges, parents first, then his wife', () => {
     const sim = quiet();
-    const a = inject(sim, { kind: 'diaper', owner: 'nora', room: 'living' });
-    const b = inject(sim, { kind: 'snack', owner: 'evelyn', room: 'living' });
-    const c = inject(sim, { kind: 'snack', owner: 'tyler', room: 'living' });
+    const a = inject(sim, { kind: 'diaper', owner: 'tot', room: 'living' });
+    const b = inject(sim, { kind: 'snack', owner: 'sis', room: 'living' });
+    const c = inject(sim, { kind: 'snack', owner: 'neighbor', room: 'living' });
     expect(sim.callBackup(a.id)).toBe(BACKUP_CALLS[0].body);
     expect(sim.callBackup(b.id)).toBe(BACKUP_CALLS[1].body);
     expect(sim.callBackup(c.id)).toBe(null);
@@ -349,9 +349,9 @@ describe('systems', () => {
 
   it('Because I Said So clears every screen_time at once', () => {
     const sim = quiet();
-    inject(sim, { kind: 'screen_time', owner: 'evelyn', room: 'living' });
-    inject(sim, { kind: 'screen_time', owner: 'tyler', room: 'kitchen' });
-    inject(sim, { kind: 'snack', owner: 'nora', room: 'kitchen' });
+    inject(sim, { kind: 'screen_time', owner: 'sis', room: 'living' });
+    inject(sim, { kind: 'screen_time', owner: 'neighbor', room: 'kitchen' });
+    inject(sim, { kind: 'snack', owner: 'tot', room: 'kitchen' });
     expect(sim.becauseISaidSo()).toBe(2);
     expect(sim.requests.map((r) => r.kind)).toEqual(['snack']);
     expect(sim.becauseISaidSo()).toBe(0);
@@ -395,7 +395,7 @@ describe('systems', () => {
   it('the run ends at 100 chaos and the timeline fires on schedule', () => {
     const sim = new Sim(5);
     step(sim, 61 / CLOCK.minutesPerSec, 0.05);
-    expect(sim.actors.nora.present).toBe(true);
+    expect(sim.actors.tot.present).toBe(true);
     sim.addChaos(200, 'default');
     expect(sim.over).toBe(true);
     expect(sim.chaos).toBe(100);

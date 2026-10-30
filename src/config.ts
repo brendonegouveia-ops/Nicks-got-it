@@ -43,9 +43,9 @@ export const WEEKS = {
 // ---------------------------------------------------------------- cast
 export const CAST = {
   nick: { name: 'Nick', catchphrase: 'I got it, I got it.' },
-  evelyn: { name: 'Evelyn', age: 5 },
-  nora: { name: 'Nora', age: 2 },
-  tyler: { name: 'Tyler', age: 7, note: 'the neighbor kid' },
+  sis: { name: 'Big Sis', age: 5 },
+  tot: { name: 'Little Sis', age: 2 },
+  neighbor: { name: 'Neighbor Kid', age: 7, note: 'from next door' },
   eloise: { name: 'Eloise', note: 'the dog (scruffy, medium-sized)' },
   wife: { name: "Nick's wife", note: 'offscreen: at work, then house errands; texts, Call for Backup, end card' },
   parents: { name: 'Mom & Dad', note: "Nick's parents, offscreen: texts, Call for Backup, FaceTime at 3:00 PM" },
@@ -125,22 +125,22 @@ export const CHAOS = {
 
 export const CRY = {
   sec: 10,
-  noraSec: 12,
+  totSec: 12,
 };
 
 // Seconds (== game minutes) between a kid's requests. Divided by the rate multiplier.
-export const REQUEST_GAP: Record<'evelyn' | 'nora' | 'tyler', [number, number]> = {
-  evelyn: [8, 14],
-  nora: [8, 13],
-  tyler: [8, 13],
+export const REQUEST_GAP: Record<'sis' | 'tot' | 'neighbor', [number, number]> = {
+  sis: [8, 14],
+  tot: [8, 13],
+  neighbor: [8, 13],
 };
 export const FIRST_REQUEST_SEC = 4;
 export const RATE_AFTER_3PM_PER_HOUR = 0.15; // uncapped
 
 export const REQUEST_WEIGHTS = {
-  nora: { diaper: 0.35, sippy_cup: 0.35, uppy: 0.3 },
-  evelyn: { snack: 0.2, juice_box: 0.15, watch_this: 0.2, booboo: 0.15, lost_shoe: 0.1, screen_time: 0.2 },
-  tyler: { snack: 0.2, juice_box: 0.1, watch_this: 0.25, booboo: 0.2, lost_shoe: 0.05, screen_time: 0.2 },
+  tot: { diaper: 0.35, sippy_cup: 0.35, uppy: 0.3 },
+  sis: { snack: 0.2, juice_box: 0.15, watch_this: 0.2, booboo: 0.15, lost_shoe: 0.1, screen_time: 0.2 },
+  neighbor: { snack: 0.2, juice_box: 0.1, watch_this: 0.25, booboo: 0.2, lost_shoe: 0.05, screen_time: 0.2 },
 } as const;
 
 export const FIGHT = {
@@ -156,7 +156,7 @@ export const UPPY = {
 
 export const WANDER = {
   gapSec: [4, 9] as [number, number],
-  noraGapSec: [7, 13] as [number, number],
+  totGapSec: [7, 13] as [number, number],
   moveChance: 0.55,
 };
 
@@ -217,12 +217,12 @@ export const ABILITIES = {
 
 // ---------------------------------------------------------------- timeline
 export const TIMELINE = {
-  noraJoins: 60, // 10:00
+  totJoins: 60, // 10:00
   dogJoins: DOG.joinT, // 11:30
   lunchRush: 180, // 12:00
   nap: NAP.startT, // 1:00 PM
-  tylerJoins: 240, // 1:00 PM
-  noraWakes: NAP.endT, // 2:30 PM
+  neighborJoins: 240, // 1:00 PM
+  totWakes: NAP.endT, // 2:30 PM
   faceTime: FACETIME.t, // 3:00 PM
   rampStart: 360, // after 3:00 PM: +15% request rate per game hour
   leaving: 450, // 4:30 PM
@@ -241,19 +241,19 @@ export type TextMsg = { from: string; body: string };
 export const TEXTS = {
   start: { from: WIFE, body: 'Thank you for holding down the fort ❤️ Work till 4, then Costco + pharmacy. Home by 5 so you can make game night!' },
   leaving: { from: WIFE, body: 'Errands done, heading home! Get your game night stuff ready 🎲' },
-  noraJoins: { from: WIFE, body: 'Nora’s show should be ending about now. You’ve got this 💪' },
+  totJoins: { from: WIFE, body: 'Little one’s show should be ending about now. You’ve got this 💪' },
   dogJoins: { from: WIFE, body: 'Crate latch sticks, jiggle it left. Ask me how I know 🙃' },
   lunchRush: { from: WIFE, body: 'Mac & cheese is in the pantry, top shelf. Lunch rush incoming!' },
-  tyler: { from: 'Tyler', body: 'Can Tyler come over?' },
+  neighbor: { from: 'Neighbor', body: 'Can our kid come over for a bit? 🙏' },
   nap: { from: WIFE, body: 'Nap at 1! Couch works. Keep Eloise quiet if you can 🤞' },
-  noraWakes: { from: WIFE, body: 'Is she up? How’d the nap go?' },
+  totWakes: { from: WIFE, body: 'Is she up? How’d the nap go?' },
   faceTime: { from: 'Mom & Dad', body: 'FaceTime… ☎️ They want to see the grandkids.' },
   runningLate: { from: WIFE, body: 'Pharmacy line is wild 🙃 like 30 more min. So sorry!!' },
   // Ambient texts, drawn at random once in a while.
   ambient: [
     { from: WIFE, body: 'how’s it going?? 😊' },
     { from: WIFE, body: 'grabbed more juice boxes, we were almost out' },
-    { from: WIFE, body: 'Nora needs sunscreen if she’s outside' },
+    { from: WIFE, body: 'the little one needs sunscreen if she’s outside' },
     { from: WIFE, body: 'thermostat’s at 72. it’s perfect. nobody touch it 😂' },
     { from: WIFE, body: 'proud of you. you’re crushing it 💪' },
     { from: WIFE, body: 'the other shoe is ALWAYS in the garage' },
@@ -300,7 +300,7 @@ export const DAD_JOKES: string[] = [
 ];
 
 export const GROANS = ['Ugh, Dad.', 'Daaad.', 'Nooo.', 'Why.', 'Booo.'];
-export const NORA_GROAN = 'Bah!';
+export const TOT_GROAN = 'Bah!';
 export const DOG_GROAN = 'Hrrmf.';
 
 export const NICK_LINES = {

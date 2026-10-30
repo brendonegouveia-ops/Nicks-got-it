@@ -125,7 +125,7 @@ export function makeNick(): Rig {
   return rig(root, body, legs, [armL, armR], 76, hand);
 }
 
-export function makeEvelyn(): Rig {
+export function makeSis(): Rig {
   const root = new THREE.Group();
   const body = new THREE.Group();
   const legs = [-3, 3].map((x) => limb(11, 2, SKIN, x, 12, box(4.5, 2.4, 6, 0xff6fa8, 0, -1, 1)));
@@ -166,7 +166,7 @@ function stripeTexture() {
   return stripes;
 }
 
-export function makeTyler(): Rig {
+export function makeNeighbor(): Rig {
   const root = new THREE.Group();
   const body = new THREE.Group();
   const legs = [-3.2, 3.2].map((x) => {
@@ -188,7 +188,7 @@ export function makeTyler(): Rig {
   return rig(root, body, legs, arms, 50);
 }
 
-export function makeNora(): Rig {
+export function makeTot(): Rig {
   const root = new THREE.Group();
   const body = new THREE.Group();
   const legs = [-3, 3].map((x) => limb(6, 2.6, SKIN, x, 7, ball(2.8, SKIN, 0, 0, 0.8, 8)));
