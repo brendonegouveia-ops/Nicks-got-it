@@ -14,8 +14,8 @@ export let H = 844;
 
 export const HUD = { y: 0, h: 64 };
 export const WORLD = { x: 0, y: 0, w: BASE_W, h: 844 }; // the 3D view: the whole screen
-export const STICK = { cx: 306, cy: 752, r: 58 };
-export const PANEL = { x: 8, y: 668, w: 224, h: 164 };
+export const STICK = { cx: 294, cy: 740, r: 72 };
+export const PANEL = { x: 8, y: 668, w: 204, h: 164 };
 export const ABILITY_R = 26;
 export const ABIL = [0, 1, 2].map(() => ({ x: 0, y: 0 })); // Dad Joke, Call for Backup, Because I Said So
 export const PAUSE = { x: 364, y: 32, r: 18 };
@@ -24,9 +24,9 @@ export function setLayout(w: number, h: number) {
   W = w;
   H = h;
   Object.assign(WORLD, { w: W, h: H });
-  Object.assign(STICK, { cx: W - 84, cy: H - 92 });
-  const pw = Math.min(STICK.cx - STICK.r - 24, 300);
-  Object.assign(PANEL, { x: STICK.cx - STICK.r - 16 - pw, y: H - 12 - PANEL.h, w: pw });
+  Object.assign(STICK, { cx: W - 96, cy: H - 104 });
+  const pw = Math.min(STICK.cx - STICK.r - 18, 300);
+  Object.assign(PANEL, { x: STICK.cx - STICK.r - 10 - pw, y: H - 12 - PANEL.h, w: pw });
   ABIL.forEach((a, i) => Object.assign(a, { x: W - 36, y: STICK.cy - STICK.r - 46 - i * 64 }));
   Object.assign(PAUSE, { x: W - 26, y: HUD.h / 2 });
 }
