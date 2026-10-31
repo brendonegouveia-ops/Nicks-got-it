@@ -597,14 +597,15 @@ export class GameScene extends Phaser.Scene {
     // Faint arrow ticks so it reads as a control before you touch it.
     g.fillStyle(0xffffff, 0.35);
     for (const [ax, ay] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-      const bx = cx + ax * (r - 12);
-      const by = cy + ay * (r - 12);
-      g.fillTriangle(bx + ax * 6, by + ay * 6, bx - ay * 6, by + ax * 6, bx + ay * 6, by - ax * 6);
+      const bx = cx + ax * (r - 14);
+      const by = cy + ay * (r - 14);
+      g.fillTriangle(bx + ax * 7, by + ay * 7, bx - ay * 7, by + ax * 7, bx + ay * 7, by - ax * 7);
     }
     const kx = cx + this.stickKnob.x;
     const ky = cy + this.stickKnob.y;
-    g.fillStyle(0x000000, 0.2).fillCircle(kx, ky + 3, 26);
-    g.fillStyle(on ? COLORS.accent : 0xf8f9fa, on ? 0.95 : 0.85).fillCircle(kx, ky, 26);
+    const kr = r * 0.45; // knob
+    g.fillStyle(0x000000, 0.2).fillCircle(kx, ky + 3, kr);
+    g.fillStyle(on ? COLORS.accent : 0xf8f9fa, on ? 0.95 : 0.85).fillCircle(kx, ky, kr);
   }
 
   private onView(p: Pt & { behind?: boolean }, pad = 0) {
